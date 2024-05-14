@@ -1,3 +1,7 @@
+import dis
+from operator import ne
+from tokenize import group
+from numpy import mean
 import pandas as pd
 from sodapy import Socrata
 from alive_progress import alive_bar
@@ -5,30 +9,36 @@ import os
 
 # ["evzn-32bs", "cthp-zqrr", "nr8w-tj77", "g2hp-ar79"]
 # 4459859
-time_periods = [
-    {"type": "rain", "code": "2kar-pnuk"},
-    {"type": "wind", "code": "hu5q-68e3"},
-    {"type": "temp", "code": "w9wd-u6jh"},
-    {"type": "temp", "code": "d4kj-kbpj"},
-    {"type": "humidity", "code": "xpun-8722"},
-    {"type": "humidity", "code": "823w-fh4c"},
 
+sensors = {
+    "air": 'ib47-atvt',
+    'meteo': 'nf78-nj6b'
+}
+
+meteo_codes = {
+    'Precipitazione': 'pstb-pga6',
+    'Velocità Vento': 'hu5q-68e3',
+    'Temperatura': 'w9wd-u6jh',
+    'Umidità Relativa': '823w-fh4c',
+    'Direzione Vento': 'purm-rsjf',
+}
+pollutants = [
+    "Monossido di carbonio",
+    "Biossido di azoto",
+    "Biossido di zolfo",
+    "Ozono",
+    "PM10 (SM2005)",
+    "Particelle sospese PM2.5",
+    "Benzene"
 ]
-pollutants = {
-    "Monossido di carbonio": {"unit":"CO", id:""},
-    "Biossido di azoto": "NO2",
-    "Biossido di zolfo": "SO2",
-    "Ozono": "O3",
-    "PM10 (SM2005)": "PM10",
-    "Particelle sospese PM2.5": "PM2.5",
-    "Benzene": "C6H6"
-    }
 
 
-def dw_ARPA_data(data: dict, id_ = ""):
-    import csv, os
+def dw_ARPA_data(data: dict, id_=""):
+    import csv
+    import os
 
-    client = Socrata("www.dati.lombardia.it", app_token="HgtqW8PtAIt17vyGLqsGoRyHx")
+    client = Socrata("www.dati.lombardia.it",
+                     app_token="HgtqW8PtAIt17vyGLqsGoRyHx")
 
     if id_ != "":
         ids = [id_]
@@ -43,134 +53,34 @@ def dw_ARPA_data(data: dict, id_ = ""):
             ids = pd.read_csv("data/sensors/temp/type/Temperatura.csv")
             ids = ids["idsensore"].tolist()
         elif data["type"] == "humidity":
-            ids = pd.read_csv("data/sensors/humidity/type/Umidità Relativa.csv")
+            ids = pd.read_csv(
+                "data/sensors/humidity/type/Umidità Relativa.csv")
             ids = ids["idsensore"].tolist()
 
-    if not os.path.exists(f"data/sensors/{data['type']}/data/"):
-        os.makedirs(f"data/sensors/{data['type']}/data/")
-
-    with open(
-        f"data/sensors/{data['type']}/data/{data['code']}.csv", "w", newline=""
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(["idsensore", "data", "valore"])
-        f.close()
 
     for id in ids:
-        if data["type"] == "rain":
-            results = client.get_all(
-                data["code"],
-                select="idsensore, date_trunc_ymd(data), SUM(valore)",
-                group="idsensore, date_trunc_ymd(data)",
-                where=f"idsensore = '{id}' AND stato = 'VA' AND valore >= 0",
-            )
-        elif data["type"] == "wind":
-            results = client.get_all(
-                data["code"],
-                select="idsensore, date_trunc_ymd(data), AVG(valore)",
-                group="idsensore, date_trunc_ymd(data)",
-                where=f"idsensore = '{id}' AND stato = 'VA' AND valore >= 0",
-            )
-        elif data["type"] == "temp":
-            results = client.get_all(
-                data["code"],
-                select="idsensore, date_trunc_ymd(data), AVG(valore)",
-                group="idsensore, date_trunc_ymd(data)",
-                where=f"idsensore = '{id}' AND stato = 'VA' AND valore >= 0",
-            )
-        elif data["type"] == "humidity":
-            results = client.get_all(
-                data["code"],
-                select="idsensore, date_trunc_ymd(data), AVG(valore)",
-                group="idsensore, date_trunc_ymd(data)",
-                where=f"idsensore = '{id}' AND stato = 'VA' AND valore >= 0",
-            )
-        c = 0
 
-        path = f"data/sensors/{data['type']}/data/{data['code']}.csv" if id_ == "" else f"data/sensors/{data['type']}/data/{id_}.csv"
-
-        with open(
-            path, "a", newline=""
-        ) as f:
-            writer = csv.writer(f)
-            for item in results:
-                c += 1
-                if data["type"] == "rain":
-                    writer.writerow(
-                        [
-                            item["idsensore"],
-                            item["date_trunc_ymd_data"],
-                            item["SUM_valore"],
-                        ]
-                    )
-                elif data["type"] == "wind":
-                    writer.writerow(
-                        [
-                            item["idsensore"],
-                            item["date_trunc_ymd_data"],
-                            item["AVG_valore"],
-                        ]
-                    )
-                elif data["type"] == "temp":
-                    writer.writerow(
-                        [
-                            item["idsensore"],
-                            item["date_trunc_ymd_data"],
-                            item["AVG_valore"],
-                        ]
-                    )
-                elif data["type"] == "humidity":
-                    writer.writerow(
-                        [
-                            item["idsensore"],
-                            item["date_trunc_ymd_data"],
-                            item["AVG_valore"],
-                        ]
-                    )
-            f.close()
-
-
-def get_ARPA_sensors(update: bool = False, type: str = ""):
-    if update:
-        sensors = Socrata(
-            "www.dati.lombardia.it", app_token="HgtqW8PtAIt17vyGLqsGoRyHx"
-        )
-        air_sensors_results = sensors.get("ib47-atvt", limit=10000)
-        meteo_sensors_results = sensors.get("nf78-nj6b", limit=10000)
-        air_sensors = pd.DataFrame.from_records(air_sensors_results).to_csv(
-            "data/air_sensors.csv", index=False, mode="w"
+        results = client.get_all(
+            data["code"],
+            select="idsensore, data, valore",
+            where=f"idsensore = '{id}' AND stato = 'VA' AND valore >= 0",
         )
 
-        meteo_sensors = pd.DataFrame.from_records(meteo_sensors_results).to_csv(
-            "data/meteo_sensors.csv", index=False, mode="w"
-        )
-        air_sensors = pd.DataFrame.from_records(air_sensors_results)
-        air_sensors = air_sensors[air_sensors["datastop"].isna()]
-        air_sensors.to_csv("data/air_sensors.csv", index=False, mode="w")
+        if os.path.exists(f"data/sensors/{data['type']}/single") == False:
+            os.makedirs(f"data/sensors/{data['type']}/single")
+        path = f"data/sensors/{data['type']}/{data['code']}.csv" if id_ == "" else f"data/sensors/{data['type']}/single/{id_}.csv"
+        
+        df = pd.DataFrame(results)
+        df.to_csv(path, mode="w", index=False)
+        
 
-        meteo_sensors = pd.DataFrame.from_records(meteo_sensors_results)
-        meteo_sensors = meteo_sensors[meteo_sensors["datastop"].isna()]
-        meteo_sensors.to_csv("data/meteo_sensors.csv", index=False, mode="w")
-
-        sensors = {"air_sensors": air_sensors, "meteo_sensors": meteo_sensors}
-
-        return (
-            {"air_sensors": air_sensors, "meteo_sensors": meteo_sensors}
-            if type == ""
-            else sensors[type]
-        )
-    else:
-        return (
-            pd.read_csv("data/sensors.csv")
-            if type == "air"
-            else pd.read_csv("data/meteo_sensors.csv")
-        )
-
-
+    
+            
 def calculate_distance(sensor1, sensor2, sensor3, sensor4, sensor5):
     import math
 
-    min_distances = pd.DataFrame(columns=["air", "rain", "wind", "temp", "humidity"])
+    min_distances = pd.DataFrame(
+        columns=["air", "rain", "wind", "temp", "humidity"])
 
     for i in range(len(sensor1)):
         min1 = 100
@@ -237,7 +147,8 @@ def combine_data(comb: pd.DataFrame):
                 f"data/sensors/air/data/2010-2017/PM10 (SM2005)/{comb.loc[i, 'air']}.csv"
             )
 
-            air_data["data"] = pd.to_datetime(air_data["data"]).dt.strftime("%Y-%m-%d")
+            air_data["data"] = pd.to_datetime(
+                air_data["data"]).dt.strftime("%Y-%m-%d")
             air_data["valore"] = pd.to_numeric(air_data["valore"])
             air_data = air_data[["data", "valore"]]
 
@@ -245,12 +156,14 @@ def combine_data(comb: pd.DataFrame):
             air_data_delta["data"] = pd.to_datetime(air_data["data"]) + pd.Timedelta(
                 days=1
             )
-            air_data_delta["data"] = air_data_delta["data"].dt.strftime("%Y-%m-%d")
+            air_data_delta["data"] = air_data_delta["data"].dt.strftime(
+                "%Y-%m-%d")
 
             rain_data = pd.read_csv(
                 f"data/sensors/rain/data/2011-2020/{comb.loc[i, 'rain']}.csv"
             )
-            rain_data["data"] = pd.to_datetime(rain_data["data"]) + pd.Timedelta(days=1)
+            rain_data["data"] = pd.to_datetime(
+                rain_data["data"]) + pd.Timedelta(days=1)
             rain_data["data"] = rain_data["data"].dt.strftime("%Y-%m-%d")
             rain_data = rain_data[["data", "valore"]]
 
@@ -314,44 +227,51 @@ def set_total_pollutant(pollutant: str):
             try:
                 file_path = f"{folder_path}/{file}"
                 file_data = pd.read_csv(file_path)
-                file_data["data"] = pd.to_datetime(file_data["data"]).dt.strftime("%Y-%m-%d")
+                file_data["data"] = pd.to_datetime(
+                    file_data["data"]).dt.strftime("%Y-%m-%d")
                 data = pd.concat([data, file_data[["data", "valore"]]])
             except pd.errors.EmptyDataError:
-                os.remove(f'C:/Users/Riccardo Savio/Documents/my-project/TestDataDistribution/{file_path}')
+                os.remove(
+                    f'C:/Users/Riccardo Savio/Documents/my-project/TestDataDistribution/{file_path}')
 
     data = data.groupby("data").mean().reset_index()
     data.sort_values("data", inplace=True)
     data = data[data['valore'] != 0.0]
-    data.to_csv(f"data/comb/air_{pollutant}.csv", index=False) 
-
+    data.to_csv(f"data/comb/air_{pollutant}.csv", index=False)
 
 
 def main():
-    NO2 = pd.read_csv("data/ferno/NO2.csv")
 
-    NO2_delta = NO2.copy()
-    NO2_delta["data"] = pd.to_datetime(NO2["data"]) - pd.Timedelta(days=1)
-    NO2_delta["data"] = NO2_delta["data"].dt.strftime("%Y-%m-%d")
+    client = Socrata("www.dati.lombardia.it", app_token="HgtqW8PtAIt17vyGLqsGoRyHx")
 
-    HUMIDITY = pd.read_csv("data/ferno/humidity.csv")
-    HUMIDITY["data"] = pd.to_datetime(HUMIDITY["data"]).dt.strftime("%Y-%m-%d")
-    RAIN = pd.read_csv("data/ferno/rain.csv")
-    RAIN["data"] = pd.to_datetime(RAIN["data"]) + pd.Timedelta(days=1)
-    RAIN["data"] = pd.to_datetime(RAIN["data"]).dt.strftime("%Y-%m-%d")
+    df = pd.read_csv("data/citta_studi/meteo_sensors.csv")
 
-    WIND = pd.read_csv("data/ferno/wind.csv")
-    WIND["data"] = pd.to_datetime(WIND["data"]).dt.strftime("%Y-%m-%d")
-    TEMP = pd.read_csv("data/ferno/temp.csv")
-    TEMP["data"] = pd.to_datetime(TEMP["data"]).dt.strftime("%Y-%m-%d")
+    for id in df["idsensore"]:
+        type = df.loc[df["idsensore"] == id, "tipologia"].values[0]
+        if type == "Precipitazione":
+            results = client.get_all(
+                meteo_codes[type],
+                select="idsensore, date_trunc_ymd(data), SUM(valore)",
+                group="idsensore, date_trunc_ymd(data)",
+                where=f"idsensore = '{id}' AND stato = 'VA' AND valore >= 0",
+            )
+        else:
+            results = client.get_all(
+                meteo_codes[type],
+                select="idsensore, date_trunc_ymd(data), AVG(valore)",
+                group="idsensore, date_trunc_ymd(data)",
+                where=f"idsensore = '{id}' AND stato = 'VA' AND valore >= 0",
+            )
 
-    NO2_comb = (NO2
-                .merge(HUMIDITY[['data', 'valore']], on="data", suffixes=("", "_HUMIDITY"))
-                .merge(RAIN[['data', 'valore']], on="data", suffixes=("", "_RAIN"))
-                .merge(WIND[['data', 'valore']], on="data", suffixes=("", "_WIND"))
-                .merge(TEMP[['data', 'valore']], on="data", suffixes=("", "_TEMP"))
-                .merge(NO2_delta[['data', 'valore']], on="data", suffixes=("", "_DELTA"))
-                )[["valore", "valore_HUMIDITY", "valore_RAIN", "valore_WIND", "valore_TEMP", "valore_DELTA"]]
-    NO2_comb = NO2_comb.round(5)
-    NO2_comb.to_csv("data/ferno/NO2_comb.csv", index=False, mode="w")
+        if os.path.exists(f"data/citta_studi/meteo/{type}") == False:
+            os.makedirs(f"data/citta_studi/meteo/{type}")
+
+        res = pd.DataFrame(results)
+        res.columns = ["idsensore", "data", "valore"]
+        res['data'] = pd.to_datetime(res['data']).dt.strftime("%Y-%m-%d")
+        res.sort_values("data", inplace=True)
+        res.to_csv(f"data/citta_studi/meteo/{type}/{id}.csv", mode="w", index=False)
+
+
 
 main()

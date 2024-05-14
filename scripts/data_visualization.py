@@ -42,15 +42,16 @@ def pollutants_heatmap():
     import seaborn as sns
     import pandas as pd
     import numpy as np
+    
+    print("Loading data...")
 
-    CO = pd.read_csv("data/comb/air_Monossido di carbonio.csv")
-    NO2 = pd.read_csv("data/comb/air_Biossido di azoto.csv")
-    SO2 = pd.read_csv("data/comb/air_Biossido di zolfo.csv")
-    NO = pd.read_csv("data/comb/air_Monossido di Azoto.csv")
-    O3 = pd.read_csv("data/comb/air_Ozono.csv")
-    PM10 = pd.read_csv("data/comb/air_PM10 (SM2005).csv")
-    PM25 = pd.read_csv("data/comb/air_Particelle sospese PM2.5.csv")
-    C6H6 = pd.read_csv("data/comb/air_Benzene.csv")
+    CO = pd.read_csv("./data/sensors/Monossido di Carbonio/avg.csv")
+    NO2 = pd.read_csv("./data/sensors/Biossido di Azoto/avg.csv")
+    SO2 = pd.read_csv("./data/sensors/Biossido di Zolfo/avg.csv")
+    O3 = pd.read_csv("./data/sensors/Ozono/avg.csv")
+    PM10 = pd.read_csv("./data/sensors/PM10 (SM2005)/avg.csv")
+    PM25 = pd.read_csv("./data/sensors/Particelle sospese PM2.5/avg.csv")
+    C6H6 = pd.read_csv("./data/sensors/Benzene/avg.csv")
     
 
     CO["data"] = pd.to_datetime(CO["data"])
@@ -69,11 +70,11 @@ def pollutants_heatmap():
         .merge(PM25, on="data", suffixes=("", "_PM25"))
         .merge(C6H6, on="data", suffixes=("", "_C6H6"))
     )
-
+    
     combined_data.drop("data", axis=1, inplace=True)
-    combined_data.columns = ["CO", "NO2", "SO2", "O3", "PM10", "PM2.5", "C6H6", "AMMONIACA", "ARSENICO"]
+    combined_data.columns = ["CO", "NO2", "SO2", "O3", "PM10", "PM25", "C6H6"]
 
-    sns.heatmap(combined_data.corr(), annot=True, mask=~np.tri(combined_data.corr().shape[1], k=-1, dtype=bool))
+    sns.heatmap(combined_data.corr(), annot=True, cmap="coolwarm")
     plt.show()
 
 def pollutant_meteo_correlation():
@@ -249,4 +250,4 @@ def plot_pollutant_meteo_rel():
 
     plt.show()
     
-plot_pollutant_meteo_rel()
+pollutants_heatmap()

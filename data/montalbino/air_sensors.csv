@@ -1,0 +1,8 @@
+idsensore,nometiposensore,unitamisura,idstazione,nomestazione,quota,provincia,comune,storico,datastart,utm_nord,utm_est,lat,lng,location,:@computed_region_6hky_swhk,:@computed_region_ttgh_9sm5,:@computed_region_af5v_nc64,datastop
+20429,PM10 (SM2005),µg/m³,501,Milano v.Marche,129.0,MI,Milano,N,2018-01-01T00:00:00.000,5038105,514918,45.49631883,9.19093444,"{'type': 'Point', 'coordinates': [9.19093444, 45.49631883]}",4.0,4.0,8.0,
+17127,Benzene,µg/m³,501,Milano v.Marche,129.0,MI,Milano,N,2012-09-13T00:00:00.000,5038105,514918,45.49631883,9.19093444,"{'type': 'Point', 'coordinates': [9.19093444, 45.49631883]}",4.0,4.0,8.0,
+20455,BlackCarbon,µg/m³,501,Milano v.Marche,129.0,MI,Milano,N,2020-11-25T00:00:00.000,5038105,514918,45.49631883,9.19093444,"{'type': 'Point', 'coordinates': [9.19093444, 45.49631883]}",4.0,4.0,8.0,
+5827,Monossido di Carbonio,mg/m³,501,Milano v.Marche,129.0,MI,Milano,N,1989-04-05T00:00:00.000,5038105,514918,45.49631883,9.19093444,"{'type': 'Point', 'coordinates': [9.19093444, 45.49631883]}",4.0,4.0,8.0,
+5504,Biossido di Azoto,µg/m³,501,Milano v.Marche,129.0,MI,Milano,N,1980-09-18T00:00:00.000,5038105,514918,45.49631883,9.19093444,"{'type': 'Point', 'coordinates': [9.19093444, 45.49631883]}",4.0,4.0,8.0,
+20529,Particelle sospese PM2.5,µg/m³,501,Milano v.Marche,129.0,MI,Milano,N,2022-01-01T00:00:00.000,5038105,514918,45.49631883,9.19093444,"{'type': 'Point', 'coordinates': [9.19093444, 45.49631883]}",4.0,4.0,8.0,
+6328,Ossidi di Azoto,µg/m³,501,Milano v.Marche,129.0,MI,Milano,N,1980-09-18T00:00:00.000,5038105,514918,45.49631883,9.19093444,"{'type': 'Point', 'coordinates': [9.19093444, 45.49631883]}",4.0,4.0,8.0,

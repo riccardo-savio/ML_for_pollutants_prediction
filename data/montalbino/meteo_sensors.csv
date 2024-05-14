@@ -1,0 +1,6 @@
+idsensore,tipologia,unit_dimisura,idstazione,nomestazione,quota,provincia,datastart,storico,cgb_nord,cgb_est,lng,lat,location,:@computed_region_af5v_nc64,datastop
+6048,Direzione Vento,°,501,Milano v.Marche,129,MI,1999-11-17T00:00:00.000,N,5038105,514918,9.19093444,45.49631883,"{'type': 'Point', 'coordinates': [9.19093444, 45.49631883]}",8.0,
+6597,Umidità Relativa,%,501,Milano v.Marche,129,MI,2002-03-21T00:00:00.000,N,5038105,514918,9.19093444,45.49631883,"{'type': 'Point', 'coordinates': [9.19093444, 45.49631883]}",8.0,
+19019,Velocità Vento,m/s,501,Milano v.Marche,129,MI,2013-10-29T00:00:00.000,N,5038105,514918,9.19093444,45.49631883,"{'type': 'Point', 'coordinates': [9.19093444, 45.49631883]}",8.0,
+5911,Temperatura,°C,501,Milano v.Marche,129,MI,1989-01-01T00:00:00.000,N,5038105,514918,9.19093444,45.49631883,"{'type': 'Point', 'coordinates': [9.19093444, 45.49631883]}",8.0,
+14121,Precipitazione,mm,1327,Milano v.Rosellini,124,MI,2012-04-02T00:00:00.000,N,5037412,515187,9.19436000,45.49007000,"{'type': 'Point', 'coordinates': [9.19436, 45.49007]}",8,
