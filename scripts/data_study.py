@@ -68,4 +68,5 @@ def main():
     print("RMSE mean: ", np.mean(rmse_list))
 
 
-main()
+if __name__ == "__main__":
+    main()

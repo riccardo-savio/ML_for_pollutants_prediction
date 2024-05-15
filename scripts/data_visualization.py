@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from pandas import DataFrame
 
 
 pollutants = {
@@ -11,23 +12,21 @@ pollutants = {
     "Benzene": "C6H6"
     }
 
-def pollutants_plot():
+def pollutants_plot(data: list[DataFrame]):
     import pandas as pd
     import matplotlib.dates as mdates
 
     
-    fig, axs = plt.subplots(7, 1, figsize=(20, 15))
+    fig, axs = plt.subplots(len(data), 1, figsize=(20, 15))
 
     for i in range(len(axs)):
         print()
-        data = pd.read_csv(f"data/comb/air_{list(pollutants.keys())[i]}.csv")
-        data["data"] = pd.to_datetime(data["data"])
-        data = data[data["data"] > "2000-01-01"]
+        row = data[i]
+        row["data"] = pd.to_datetime(row["data"])
         
-        axs[i].plot("data", "valore", data=data)
+        axs[i].plot("data", "valore", data=row)
         axs[i].xaxis.set_major_locator(mdates.YearLocator(2))
         axs[i].xaxis.set_visible(False)
-        axs[i].set_ylabel(f'{pollutants[list(pollutants.keys())[i]]}')
         axs[i].grid(True)
 
     axs[len(axs) - 1].xaxis.set_visible(True)
@@ -250,4 +249,15 @@ def plot_pollutant_meteo_rel():
 
     plt.show()
     
-pollutants_heatmap()
+def main():
+    import os
+    import pandas as pd
+    data = []
+    for folder in os.listdir("data/citta_studi/air"):
+        for file in os.listdir(f"data/citta_studi/air/{folder}"):
+            data.append(pd.read_csv(f"data/citta_studi/air/{folder}/{file}"))
+    
+    pollutants_plot(data)
+
+if __name__ == "__main__":
+    main()

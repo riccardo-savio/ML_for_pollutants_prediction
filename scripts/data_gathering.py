@@ -242,36 +242,13 @@ def set_total_pollutant(pollutant: str):
 
 def main():
 
-    client = Socrata("www.dati.lombardia.it", app_token="HgtqW8PtAIt17vyGLqsGoRyHx")
-
-    df = pd.read_csv("data/citta_studi/meteo_sensors.csv")
-
-    for id in df["idsensore"]:
-        type = df.loc[df["idsensore"] == id, "tipologia"].values[0]
-        if type == "Precipitazione":
-            results = client.get_all(
-                meteo_codes[type],
-                select="idsensore, date_trunc_ymd(data), SUM(valore)",
-                group="idsensore, date_trunc_ymd(data)",
-                where=f"idsensore = '{id}' AND stato = 'VA' AND valore >= 0",
-            )
-        else:
-            results = client.get_all(
-                meteo_codes[type],
-                select="idsensore, date_trunc_ymd(data), AVG(valore)",
-                group="idsensore, date_trunc_ymd(data)",
-                where=f"idsensore = '{id}' AND stato = 'VA' AND valore >= 0",
-            )
-
-        if os.path.exists(f"data/citta_studi/meteo/{type}") == False:
-            os.makedirs(f"data/citta_studi/meteo/{type}")
-
-        res = pd.DataFrame(results)
-        res.columns = ["idsensore", "data", "valore"]
-        res['data'] = pd.to_datetime(res['data']).dt.strftime("%Y-%m-%d")
-        res.sort_values("data", inplace=True)
-        res.to_csv(f"data/citta_studi/meteo/{type}/{id}.csv", mode="w", index=False)
+    for folder in os.listdir("data/citta_studi/air/"):
+        for file in os.listdir(f"data/citta_studi/air/{folder}"):
+            data = pd.read_csv(f"data/citta_studi/air/{folder}/{file}")
+            data["data"] = pd.to_datetime(data["data"]).dt.strftime("%Y-%m-%d")
+            data = data[data['data'] > '2021-01-01']
+            data.to_csv(f"data/citta_studi/air/{folder}/{file}", index=False)
 
 
-
-main()
+if __name__ == "__main__":  
+    main()
