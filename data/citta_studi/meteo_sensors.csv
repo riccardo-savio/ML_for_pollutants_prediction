@@ -1,6 +1,0 @@
-idsensore,tipologia,unit_dimisura,idstazione,nomestazione,quota,provincia,datastart,storico,cgb_nord,cgb_est,lng,lat,location,:@computed_region_af5v_nc64,datastop
-5909,Temperatura,°C,502,Milano v.Juvara,122,MI,1989-01-01T00:00:00.000,N,5035546,517377,9.22231536,45.47322769,"{'type': 'Point', 'coordinates': [9.22231536, 45.47322769]}",8.0,
-6044,Direzione Vento,°,502,Milano v.Juvara,122,MI,1999-01-01T00:00:00.000,N,5035546,517377,9.22231536,45.47322769,"{'type': 'Point', 'coordinates': [9.22231536, 45.47322769]}",8.0,
-6179,Umidità Relativa,%,502,Milano v.Juvara,122,MI,1999-01-01T00:00:00.000,N,5035546,517377,9.22231536,45.47322769,"{'type': 'Point', 'coordinates': [9.22231536, 45.47322769]}",8.0,
-5908,Precipitazione,mm,502,Milano v.Juvara,122,MI,1989-01-01T00:00:00.000,N,5035546,517377,9.22231536,45.47322769,"{'type': 'Point', 'coordinates': [9.22231536, 45.47322769]}",8.0,
-19242,Velocità Vento,m/s,502,Milano v.Juvara,122,MI,2014-03-03T00:00:00.000,N,5035546,517377,9.22231536,45.47322769,"{'type': 'Point', 'coordinates': [9.22231536, 45.47322769]}",8.0,

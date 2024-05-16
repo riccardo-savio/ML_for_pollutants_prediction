@@ -1,5 +1,11 @@
+from ast import parse
+from matplotlib.pylab import f
 import matplotlib.pyplot as plt
 from pandas import DataFrame
+from pyparsing import col
+from seaborn import kdeplot
+
+from data_preprocessing import data_distribution, log_transform, merge_datasets, remove_outliers_iqr, remove_outliers_zscore
 
 
 pollutants = {
@@ -12,7 +18,10 @@ pollutants = {
     "Benzene": "C6H6"
     }
 
-def pollutants_plot(data: list[DataFrame]):
+sensor_names = {
+}
+
+def plot_dfs(data: list[DataFrame]):
     import pandas as pd
     import matplotlib.dates as mdates
 
@@ -37,49 +46,38 @@ def pollutants_plot(data: list[DataFrame]):
 
     plt.show()
 
-def pollutants_heatmap():
+def boxplot_dfs(data: list[DataFrame], columns: list[str]):
+    import seaborn as sns
+    import pandas as pd
+
+    df = pd.concat(data, axis=1)
+    df.columns = columns
+
+    sns.boxplot(data=df)
+    plt.savefig("imgs/Brera .png")
+
+def pollutants_heatmap(pollutants: list[DataFrame], columns: list[str]):
     import seaborn as sns
     import pandas as pd
     import numpy as np
     
-    print("Loading data...")
+    from functools import reduce
 
-    CO = pd.read_csv("./data/sensors/Monossido di Carbonio/avg.csv")
-    NO2 = pd.read_csv("./data/sensors/Biossido di Azoto/avg.csv")
-    SO2 = pd.read_csv("./data/sensors/Biossido di Zolfo/avg.csv")
-    O3 = pd.read_csv("./data/sensors/Ozono/avg.csv")
-    PM10 = pd.read_csv("./data/sensors/PM10 (SM2005)/avg.csv")
-    PM25 = pd.read_csv("./data/sensors/Particelle sospese PM2.5/avg.csv")
-    C6H6 = pd.read_csv("./data/sensors/Benzene/avg.csv")
-    
+    df = reduce(lambda df1,df2: pd.merge(df1 ,df2, on='data', suffixes=('', '_')), pollutants)
 
-    CO["data"] = pd.to_datetime(CO["data"])
-    NO2["data"] = pd.to_datetime(NO2["data"])
-    SO2["data"] = pd.to_datetime(SO2["data"])
-    O3["data"] = pd.to_datetime(O3["data"])
-    PM10["data"] = pd.to_datetime(PM10["data"])
-    PM25["data"] = pd.to_datetime(PM25["data"])
-    C6H6["data"] = pd.to_datetime(C6H6["data"])
+    df.drop("data", axis=1, inplace=True)
+    df.columns = columns
 
-    combined_data = (
-        CO.merge(NO2, on="data", suffixes=("", "_NO2"))
-        .merge(SO2, on="data", suffixes=("", "_SO2"))
-        .merge(O3, on="data", suffixes=("", "_O3"))
-        .merge(PM10, on="data", suffixes=("", "_PM10"))
-        .merge(PM25, on="data", suffixes=("", "_PM25"))
-        .merge(C6H6, on="data", suffixes=("", "_C6H6"))
-    )
-    
-    combined_data.drop("data", axis=1, inplace=True)
-    combined_data.columns = ["CO", "NO2", "SO2", "O3", "PM10", "PM25", "C6H6"]
-
-    sns.heatmap(combined_data.corr(), annot=True, cmap="coolwarm")
+    sns.heatmap(df.corr(), annot=True, mask=~np.tri(df.corr().shape[1], k=-1, dtype=bool), cmap="coolwarm")
     plt.show()
-
-def pollutant_meteo_correlation():
+    
+def pollutant_meteo_correlation(pollutant: DataFrame, meteo: list[DataFrame], x_label: list[str], y_label: list[str]):
     import pandas as pd
     import seaborn as sns
     import numpy as np
+
+
+
     
     HUMIDITY = pd.read_csv("data/ferno/humidity.csv")
     RAIN = pd.read_csv("data/ferno/rain.csv")
@@ -105,159 +103,119 @@ def pollutant_meteo_correlation():
     sns.heatmap(merged_data.corr(), annot=True, mask=~np.tri(merged_data.corr().shape[1], k=-1, dtype=bool), cmap="coolwarm")
     plt.show()
 
-def plot_pollutant_meteo():
-    import pandas as pd
-    import matplotlib.dates as mdates
-    import datetime
-
-
-    PM10 = pd.read_csv("data/ferno/PM10.csv")
-    HUMIDITY = pd.read_csv("data/ferno/humidity.csv")
-    RAIN = pd.read_csv("data/ferno/rain.csv")
-    WIND = pd.read_csv("data/ferno/wind.csv")
-    TEMP = pd.read_csv("data/ferno/temp.csv")
-    
-
-    HUMIDITY = HUMIDITY.merge(PM10, on="data", suffixes=("", "_PM10"))[['data', 'valore']]
-    RAIN = RAIN.merge(PM10, on="data", suffixes=("", "_PM10"))[["data", "valore"]]
-    WIND = WIND.merge(PM10, on="data", suffixes=("", "_PM10"))[["data", "valore"]]
-    TEMP = TEMP.merge(PM10, on="data", suffixes=("", "_PM10"))[["data", "valore"]]
-    PM10 = PM10[["data", "valore"]]
-
-    PM10['data'] = pd.to_datetime(PM10['data'])
-    HUMIDITY['data'] = pd.to_datetime(HUMIDITY['data'])
-    RAIN['data'] = pd.to_datetime(RAIN['data'])
-    WIND['data'] = pd.to_datetime(WIND['data'])
-    TEMP['data'] = pd.to_datetime(TEMP['data'])
-    
-
-    fig, axs = plt.subplots(5, 1, figsize=(20, 15))
-
-
-
-    axs[0].plot("data", "valore", data=PM10)
-    axs[0].xaxis.set_major_locator(mdates.YearLocator(2))
-    axs[0].xaxis.set_visible(False)
-    axs[0].set_ylabel("PM10")
-    axs[0].grid(True)
-
-    axs[1].plot("data", "valore", data=RAIN)
-    axs[1].xaxis.set_major_locator(mdates.YearLocator(2))
-    axs[1].xaxis.set_visible(False)
-    axs[1].set_ylabel("RAIN")
-    axs[1].grid(True)
-
-    axs[2].plot("data", "valore", data=WIND)
-    axs[2].xaxis.set_major_locator(mdates.YearLocator(2))
-    axs[2].xaxis.set_visible(False)
-    axs[2].set_ylabel("WIND")
-    axs[2].grid(True)
-
-    axs[3].plot("data", "valore", data=TEMP)
-    axs[3].xaxis.set_major_locator(mdates.YearLocator(2))
-    axs[3].xaxis.set_visible(False)
-    axs[3].xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
-    axs[3].set_ylabel("TEMP")
-    axs[3].grid(True)
-
-    axs[4].plot("data", "valore", data=HUMIDITY)
-    axs[4].xaxis.set_major_locator(mdates.YearLocator(2))
-    axs[4].xaxis.set_visible(True)
-    axs[4].set_ylabel("HUMIDITY")
-    axs[4].grid(True)
-
-    for label in axs[4].get_xticklabels(which='major'):
-        label.set(rotation=30, horizontalalignment='right')
-
-    plt.show()
-
-def plot_pollutant_meteo_rel():
+def plot_pollutant_meteo_rel(pollutants: list[DataFrame], meteo: list[DataFrame], x_labels: list[str], y_labels: list[str]):
 
     import pandas as pd
-    import matplotlib.dates as mdates
+    import numpy as np
 
-    HUMIDITY = pd.read_csv("data/ferno/humidity.csv")
-    RAIN = pd.read_csv("data/ferno/rain.csv")
-    WIND = pd.read_csv("data/ferno/wind.csv")
-    TEMP = pd.read_csv("data/ferno/temp.csv")
-    PM10 = pd.read_csv("data/ferno/PM10.csv")
-    NO2 = pd.read_csv("data/ferno/NO2.csv")
-    O3 = pd.read_csv("data/ferno/O3.csv")
+    fig, axs = plt.subplots(len(pollutants), len(meteo), squeeze=False)
 
-    PM10_RAIN = PM10.merge(RAIN, on="data", suffixes=("", "_rain"))
-    PM10_WIND = PM10.merge(WIND, on="data", suffixes=("", "_wind"))
-    PM10_TEMP = PM10.merge(TEMP, on="data", suffixes=("", "_temp"))
-    PM10_HUMIDITY = PM10.merge(HUMIDITY, on="data", suffixes=("", "_humidity"))
+    for i in range(len(pollutants)):
+        
+        pollutant = pollutants[i][['data', 'valore']]
+        pollutant['data'] = pd.to_datetime(pollutant['data'])
 
-    NO2_RAIN = NO2.merge(RAIN, on="data", suffixes=("", "_rain"))
-    NO2_WIND = NO2.merge(WIND, on="data", suffixes=("", "_wind"))
-    NO2_TEMP = NO2.merge(TEMP, on="data", suffixes=("", "_temp"))
-    NO2_HUMIDITY = NO2.merge(HUMIDITY, on="data", suffixes=("", "_humidity"))
+        for j in range(len(meteo)):
 
-    O3_RAIN = O3.merge(RAIN, on="data", suffixes=("", "_rain"))
-    O3_WIND = O3.merge(WIND, on="data", suffixes=("", "_wind"))
-    O3_TEMP = O3.merge(TEMP, on="data", suffixes=("", "_temp"))
-    O3_HUMIDITY = O3.merge(HUMIDITY, on="data", suffixes=("", "_humidity"))
+            if j == 0:
+                axs[i][j].set_ylabel(y_labels[i])
 
-    fig, axs = plt.subplots(3, 4, figsize=(20, 3))
+            if i == len(pollutants) - 1:
+                axs[i][j].set_xlabel(x_labels[j])
 
-    axs[0][0].scatter("valore_rain", "valore", data=PM10_RAIN)
-    axs[0][0].set_ylabel("PM10")
-    axs[0][0].grid(True)
+            meteo_s = meteo[j][["data", "valore"]]
+            meteo_s["data"] = pd.to_datetime(meteo_s["data"])
 
-    axs[0][1].scatter("valore_wind", "valore", data=PM10_WIND)
-    axs[0][1].grid(True)
+            if x_labels[j] == "RN" or "WS":
+                meteo_s["data"] = pd.to_datetime(meteo_s["data"]) + pd.Timedelta(days=1)
 
-    axs[0][2].scatter("valore_temp", "valore", data=PM10_TEMP)
-    axs[0][2].grid(True)
+            
 
-    axs[0][3].scatter("valore_humidity", "valore", data=PM10_HUMIDITY)
-    axs[0][3].grid(True)
+            
+            meteo_s = meteo_s[["data", "valore"]].merge(pollutant, on="data", suffixes=(f"_{x_labels[j]}", f"_{y_labels[i]}"))
+            meteo_s.drop("data", axis=1, inplace=True)
+            meteo_s.columns = [x_labels[j], y_labels[i]]
 
-    axs[1][0].scatter("valore_rain", "valore", data=NO2_RAIN)
-    axs[1][0].set_ylabel("NO2")
-    axs[1][0].grid(True)
+            axs[i][j].scatter(x_labels[j], y_labels[i], data=meteo_s)
+            axs[i][j].grid(True)
 
-    axs[1][1].scatter("valore_wind", "valore", data=NO2_WIND)
-    axs[1][1].grid(True)
 
-    axs[1][2].scatter("valore_temp", "valore", data=NO2_TEMP)
-    axs[1][2].grid(True)
-
-    axs[1][3].scatter("valore_humidity", "valore", data=NO2_HUMIDITY)
-    axs[1][3].grid(True)
-
-    axs[2][0].scatter("valore_rain", "valore", data=O3_RAIN)
-    axs[2][0].set_ylabel("O3")
-    axs[2][0].set_xlabel("RAIN mm")
-    axs[2][0].grid(True)
-
-    axs[2][1].scatter("valore_wind", "valore", data=O3_WIND)
-    axs[2][1].set_xlabel("WIND m/s")
-    axs[2][1].grid(True)
-
-    axs[2][2].scatter("valore_temp", "valore", data=O3_TEMP)
-    axs[2][2].set_xlabel("TEMP deg")
-    axs[2][2].grid(True)
-
-    axs[2][3].scatter("valore_humidity", "valore", data=O3_HUMIDITY)
-    axs[2][3].set_xlabel("HUMIDITY %")
-    axs[2][3].grid(True)
 
 
 
 
     plt.show()
     
+def time_series_histogram(data: DataFrame, time_unit: str, pollutant: str): 
+    import pandas as pd
+    import seaborn as sns
+
+    data.columns = ["data", "valore"]
+    data["data"] = pd.to_datetime(data["data"]).dt.strftime(time_unit)
+    data = data.groupby("data").mean().reset_index()[['data', 'valore']]
+
+    if time_unit == "%m":
+        data["data"] = pd.to_datetime(data["data"], format='%m').dt.strftime("%B")
+
+    plt.title(f'Media annuale di {pollutant}')
+    plt.bar(data["data"], data["valore"], align='center', alpha=0.5, color="blue")
+    plt.xticks(rotation=90)
+    plt.ylabel('Valore medio')
+    plt.tight_layout()
+
+
+
 def main():
+
     import os
     import pandas as pd
-    data = []
-    for folder in os.listdir("data/citta_studi/air"):
-        for file in os.listdir(f"data/citta_studi/air/{folder}"):
-            data.append(pd.read_csv(f"data/citta_studi/air/{folder}/{file}"))
-    
-    pollutants_plot(data)
+    import seaborn as sns
+    import numpy as np
+
+
+    xs = []
+    columns = []
+    for file in os.listdir(f"data/_processed/Brera/"):
+        df = pd.read_csv(f"data/_processed/Brera/{file}", parse_dates=['data'])
+        df['Day'] = df['data'].dt.day_of_year
+        df['Month'] = df['data'].dt.month
+
+        def encode(data, col, max_val):
+            data['Sin_'+col] = np.sin(2 * np.pi * data[col]/max_val)
+            data['Cos_'+col] = np.cos(2 * np.pi * data[col]/max_val)
+            return data
+        
+        df = encode(df, 'Day', 365)
+        df = encode(df, 'Month', 12)
+
+        df.to_csv(f"data/_processed/Brera/sin_cos_{file}", index=False)
+        sns.heatmap(df.corr(), annot=True, mask=~np.tri(df.corr().shape[1], k=-1, dtype=bool), cmap="coolwarm")
+        plt.tight_layout()
+        plt.show()
+
+
+
+
+
+    """ ys = []
+    rows = []
+    for file in os.listdir(f"data/_raw/Brera/meteo/"):
+        df = pd.read_csv(f"data/_raw/Brera/meteo/{file}")[['data', 'valore']]
+        ys.append(df)
+        rows.append(file.split(".")[0]) """
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == "__main__":
     main()
