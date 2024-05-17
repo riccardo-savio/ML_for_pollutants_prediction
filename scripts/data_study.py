@@ -7,11 +7,11 @@ from pandas import DataFrame
 
 
 def linear_regression(data, x, y):
-    from sklearn.neighbors import KNeighborsRegressor
+    from sklearn.linear_model import LinearRegression
     X = data[x]
     y = data[y]
     
-    model = KNeighborsRegressor()
+    model = LinearRegression()
     model.fit(X, y)
     
     return model
@@ -31,7 +31,7 @@ def decision_tree(data, x, y):
     X = data[x]
     y = data[y]
     
-    model = DecisionTreeRegressor()
+    model = DecisionTreeRegressor(max_depth=6)
     model.fit(X, y)
     
     return model
@@ -87,13 +87,11 @@ def main():
 
     PM2 = pd.read_csv("data/_processed/Brera/sin_cos_PM2.5.csv")[['data', 'PM2']]
 
-    data = data.merge(PM2, on='data')
-    
     # Split the data into training and test sets
     train_data, test_data = train_test_split(data, test_size=0.2, random_state=42)
     
     # Specify the features and target variables
-    features = ["PM10_dayb", "Humidity","Rain","Temp","Wind", "Cos_Month", "Cos_Day", 'PM2']
+    features = ["PM10_dayb", "Humidity","Rain","Temp","Wind", "Cos_Month", "Cos_Day"]
     target = "PM10"
     
     # Train the linear regression model
@@ -191,7 +189,7 @@ def main():
 
     
 
-    
+
     
 
 
