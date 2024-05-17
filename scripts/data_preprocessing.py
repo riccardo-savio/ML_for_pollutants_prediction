@@ -198,7 +198,6 @@ def boxplot_dfs(data: list[DataFrame], columns: list[str]):
     sns.boxplot(data=df)
     plt.show()
 
-
 def main():
 
     dfs = []

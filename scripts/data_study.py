@@ -1,5 +1,6 @@
 
 import os
+from turtle import st
 
 from pandas import DataFrame
 
@@ -77,22 +78,22 @@ def support_vector(data, x, y):
     return model
 
 
-def main():
+def study():
     import pandas as pd
     from sklearn.model_selection import train_test_split
-    from sklearn.metrics import root_mean_squared_error
+    from sklearn.metrics import root_mean_squared_error, mean_absolute_error
     
-    # Load the data
-    data = pd.read_csv("data/_processed/Brera/sin_cos_PM10.csv")
 
-    PM2 = pd.read_csv("data/_processed/Brera/sin_cos_PM2.5.csv")[['data', 'PM2']]
+    p = 'O3'
+    # Load the data
+    data = pd.read_csv(f"data/_processed/Brera/sin_cos_{p}.csv")
 
     # Split the data into training and test sets
     train_data, test_data = train_test_split(data, test_size=0.2, random_state=42)
     
     # Specify the features and target variables
-    features = ["PM10_dayb", "Humidity","Rain","Temp","Wind", "Cos_Month", "Cos_Day"]
-    target = "PM10"
+    features = ["Humidity","Rain","Temp","Wind", "Cos_Day", "Cos_Month"]
+    target = p
     
     # Train the linear regression model
     linear_model = linear_regression(train_data, features, target)
@@ -132,6 +133,27 @@ def main():
     nn_predictions = nn_model.predict(test_data[features])
     rr_predictions = rr_model.predict(test_data[features])
     sv_predictions = sv_model.predict(test_data[features])
+
+    linear_mae = mean_absolute_error(test_data[target], linear_predictions)
+    rf_mae = mean_absolute_error(test_data[target], rf_predictions)
+    dt_mae = mean_absolute_error(test_data[target], dt_predictions)
+    gb_mae = mean_absolute_error(test_data[target], gb_predictions)
+    nn_mae = mean_absolute_error(test_data[target], nn_predictions)
+    rr_mae = mean_absolute_error(test_data[target], rr_predictions)
+    sv_mae = mean_absolute_error(test_data[target], sv_predictions)
+
+    train_linear_mae = mean_absolute_error(train_data[target], train_linear_predictions)
+    train_rf_mae = mean_absolute_error(train_data[target], train_rf_predictions)
+    train_dt_mae = mean_absolute_error(train_data[target], train_dt_predictions)
+    train_gb_mae = mean_absolute_error(train_data[target], train_gb_predictions)
+    train_nn_mae = mean_absolute_error(train_data[target], train_nn_predictions)
+    train_rr_mae = mean_absolute_error(train_data[target], train_rr_predictions)
+    train_sv_mae = mean_absolute_error(train_data[target], train_sv_predictions)
+
+    stats = pd.DataFrame({"Model": ["Linear Regression", "Random Forest", "Decision Tree", "Gradient Boosting", "Neural Network", "Ridge Regression", "Support Vector"]}) 
+    
+    stats['Train MAE'] = [train_linear_mae, train_rf_mae, train_dt_mae, train_gb_mae, train_nn_mae, train_rr_mae, train_sv_mae]
+    stats['Test MAE'] = [linear_mae, rf_mae, dt_mae, gb_mae, nn_mae, rr_mae, sv_mae]
     
     # Print the evaluation metrics
     linear_rmse = root_mean_squared_error(test_data[target], linear_predictions)
@@ -150,14 +172,10 @@ def main():
     train_rr_rmse = root_mean_squared_error(train_data[target], train_rr_predictions)
     train_sv_rmse = root_mean_squared_error(train_data[target], train_sv_predictions)
 
-    print("Linear Regression RMSE:", train_linear_rmse, linear_rmse)
-    print("Random Forest RMSE:", train_rf_rmse, rf_rmse)
-    print("Decision Tree RMSE:", train_dt_rmse, dt_rmse)
-    print("Gradient Boosting RMSE:", train_gb_rmse, gb_rmse)
-    print("Neural Network RMSE:", train_nn_rmse, nn_rmse)
-    print("Ridge Regression RMSE:", train_rr_rmse, rr_rmse)
-    print("Support Vector RMSE:", train_sv_rmse, sv_rmse)
+    stats["Train RMSE"] = [train_linear_rmse, train_rf_rmse, train_dt_rmse, train_gb_rmse, train_nn_rmse, train_rr_rmse, train_sv_rmse]
+    stats["Test RMSE"] = [linear_rmse, rf_rmse, dt_rmse, gb_rmse, nn_rmse, rr_rmse, sv_rmse]
 
+   
     # calculate r squared
 
     from sklearn.metrics import r2_score
@@ -178,20 +196,8 @@ def main():
     train_rr_r2 = r2_score(train_data[target], train_rr_predictions)
     train_sv_r2 = r2_score(train_data[target], train_sv_predictions)
 
-    print("Linear Regression R2:", train_linear_r2, linear_r2)
-    print("Random Forest R2:", train_rf_r2, rf_r2)
-    print("Decision Tree R2:", train_dt_r2, dt_r2)
-    print("Gradient Boosting R2:", train_gb_r2, gb_r2)
-    print("Neural Network R2:", train_nn_r2, nn_r2)
-    print("Ridge Regression R2:", train_rr_r2, rr_r2)
-    print("Support Vector R2:", train_sv_r2, sv_r2)
+    stats["Train R2"] = [train_linear_r2, train_rf_r2, train_dt_r2, train_gb_r2, train_nn_r2, train_rr_r2, train_sv_r2]
+    stats["test R2"] = [linear_r2, rf_r2, dt_r2, gb_r2, nn_r2, rr_r2, sv_r2]
     
+    return stats
 
-    
-
-
-    
-
-
-if __name__ == "__main__":
-    main()

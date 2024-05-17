@@ -6,6 +6,7 @@ from pyparsing import col
 from seaborn import kdeplot
 
 from data_preprocessing import data_distribution, log_transform, merge_datasets, remove_outliers_iqr, remove_outliers_zscore
+from data_study import study
 
 
 pollutants = {
@@ -175,7 +176,7 @@ def main():
 
     xs = []
     columns = []
-    for file in os.listdir(f"data/_processed/Brera/"):
+    """ for file in os.listdir(f"data/_processed/Brera/"):
         df = pd.read_csv(f"data/_processed/Brera/{file}", parse_dates=['data'])
         df['Day'] = df['data'].dt.day_of_year
         df['Month'] = df['data'].dt.month
@@ -192,18 +193,20 @@ def main():
         sns.heatmap(df.corr(), annot=True, mask=~np.tri(df.corr().shape[1], k=-1, dtype=bool), cmap="coolwarm")
         plt.tight_layout()
         plt.show()
-
-
-
-
-
-    """ ys = []
-    rows = []
-    for file in os.listdir(f"data/_raw/Brera/meteo/"):
+        ys = []
+        rows = []
+        for file in os.listdir(f"data/_raw/Brera/meteo/"):
         df = pd.read_csv(f"data/_raw/Brera/meteo/{file}")[['data', 'valore']]
         ys.append(df)
         rows.append(file.split(".")[0]) """
 
+
+    df = study()
+    print(df)
+    df.hist(column=['Model'], bins=20, figsize=(20, 15))
+    plt.show()
+
+    
 
 
 
