@@ -163,6 +163,8 @@ def time_series_histogram(data: DataFrame, time_unit: str, pollutant: str):
     plt.xticks(rotation=90)
     plt.ylabel('Valore medio')
     plt.tight_layout()
+    plt.show()
+    plt.clf()
 
 
 
@@ -201,24 +203,8 @@ def main():
         rows.append(file.split(".")[0]) """
 
 
-    df = study()
-    print(df)
-    df.hist(column=['Model'], bins=20, figsize=(20, 15))
-    plt.show()
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
+    df = pd.read_csv(f"data/_processed/Brera/O3.csv", parse_dates=['data'])
+    print(df.describe())
 
 if __name__ == "__main__":
     main()
