@@ -1,3 +1,4 @@
+from matplotlib import pyplot as plt
 import pandas as pd
 from math import log
 import os
@@ -198,14 +199,31 @@ def boxplot_dfs(data: list[DataFrame], columns: list[str]):
     sns.boxplot(data=df)
     plt.show()
 
+def standardize_data(data: list[DataFrame], columns: list[str]):
+    from sklearn.preprocessing import StandardScaler
+    import pandas as pd
+    import numpy as np
+
+    df = pd.concat(data, axis=1)
+    df.columns = columns
+
+    scaler = StandardScaler()
+    df_scaled = scaler.fit_transform(df)
+    df_scaled = pd.DataFrame(df_scaled, columns=columns)
+
+    return df_scaled
+
 def main():
 
-    dfs = []
-    pollutants = []
+    df = pd.read_csv("data/_processed/Brera/PM10.csv")
+
+    """ df.hist(column="PM10", bins=20)
+    plt.show() """
+
+
+    df1 = standardize_data([df["PM10"]], ["PM10"])
+    df1.hist(column="PM10", bins=20)
+    plt.show()
     
-
-
-
-
 if __name__ == '__main__':
     main()

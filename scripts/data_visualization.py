@@ -178,7 +178,7 @@ def main():
 
     xs = []
     columns = []
-    """ for file in os.listdir(f"data/_processed/Brera/"):
+    for file in os.listdir(f"data/_processed/Brera/"):
         df = pd.read_csv(f"data/_processed/Brera/{file}", parse_dates=['data'])
         df['Day'] = df['data'].dt.day_of_year
         df['Month'] = df['data'].dt.month
@@ -198,13 +198,12 @@ def main():
         ys = []
         rows = []
         for file in os.listdir(f"data/_raw/Brera/meteo/"):
-        df = pd.read_csv(f"data/_raw/Brera/meteo/{file}")[['data', 'valore']]
-        ys.append(df)
-        rows.append(file.split(".")[0]) """
+            df = pd.read_csv(f"data/_raw/Brera/meteo/{file}")[['data', 'valore']]
+            ys.append(df)
+            rows.append(file.split(".")[0])
 
 
-    df = pd.read_csv(f"data/_processed/Brera/O3.csv", parse_dates=['data'])
-    print(df.describe())
+
 
 if __name__ == "__main__":
     main()
