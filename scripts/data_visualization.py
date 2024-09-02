@@ -1,12 +1,5 @@
-from ast import parse
-from matplotlib.pylab import f
 import matplotlib.pyplot as plt
 from pandas import DataFrame
-from pyparsing import col
-from seaborn import kdeplot
-
-from data_preprocessing import data_distribution, log_transform, merge_datasets, remove_outliers_iqr, remove_outliers_zscore
-from data_study import study
 
 
 pollutants = {
@@ -16,36 +9,36 @@ pollutants = {
     "Ozono": "O3",
     "PM10 (SM2005)": "PM10",
     "Particelle sospese PM2.5": "PM2.5",
-    "Benzene": "C6H6"
-    }
-
-sensor_names = {
+    "Benzene": "C6H6",
 }
+
+sensor_names = {}
+
 
 def plot_dfs(data: list[DataFrame]):
     import pandas as pd
     import matplotlib.dates as mdates
 
-    
     fig, axs = plt.subplots(len(data), 1, figsize=(20, 15))
 
     for i in range(len(axs)):
         print()
         row = data[i]
         row["data"] = pd.to_datetime(row["data"])
-        
+
         axs[i].plot("data", "valore", data=row)
         axs[i].xaxis.set_major_locator(mdates.YearLocator(2))
         axs[i].xaxis.set_visible(False)
         axs[i].grid(True)
 
     axs[len(axs) - 1].xaxis.set_visible(True)
-    axs[len(axs) - 1].xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
-    
-    for label in axs[len(axs) - 1].get_xticklabels(which='major'):
-        label.set(rotation=30, horizontalalignment='right')
+    axs[len(axs) - 1].xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+
+    for label in axs[len(axs) - 1].get_xticklabels(which="major"):
+        label.set(rotation=30, horizontalalignment="right")
 
     plt.show()
+
 
 def boxplot_dfs(data: list[DataFrame], columns: list[str]):
     import seaborn as sns
@@ -57,29 +50,37 @@ def boxplot_dfs(data: list[DataFrame], columns: list[str]):
     sns.boxplot(data=df)
     plt.savefig("imgs/Brera .png")
 
+
 def pollutants_heatmap(pollutants: list[DataFrame], columns: list[str]):
     import seaborn as sns
     import pandas as pd
     import numpy as np
-    
+
     from functools import reduce
 
-    df = reduce(lambda df1,df2: pd.merge(df1 ,df2, on='data', suffixes=('', '_')), pollutants)
+    df = reduce(
+        lambda df1, df2: pd.merge(df1, df2, on="data", suffixes=("", "_")), pollutants
+    )
 
     df.drop("data", axis=1, inplace=True)
     df.columns = columns
 
-    sns.heatmap(df.corr(), annot=True, mask=~np.tri(df.corr().shape[1], k=-1, dtype=bool), cmap="coolwarm")
+    sns.heatmap(
+        df.corr(),
+        annot=True,
+        mask=~np.tri(df.corr().shape[1], k=-1, dtype=bool),
+        cmap="coolwarm",
+    )
     plt.show()
-    
-def pollutant_meteo_correlation(pollutant: DataFrame, meteo: list[DataFrame], x_label: list[str], y_label: list[str]):
+
+
+def pollutant_meteo_correlation(
+    pollutant: DataFrame, meteo: list[DataFrame], x_label: list[str], y_label: list[str]
+):
     import pandas as pd
     import seaborn as sns
     import numpy as np
 
-
-
-    
     HUMIDITY = pd.read_csv("data/ferno/humidity.csv")
     RAIN = pd.read_csv("data/ferno/rain.csv")
     WIND = pd.read_csv("data/ferno/wind.csv")
@@ -101,23 +102,30 @@ def pollutant_meteo_correlation(pollutant: DataFrame, meteo: list[DataFrame], x_
     merged_data.drop("data", axis=1, inplace=True)
     merged_data.columns = ["PM10", "RAIN", "WIND", "TEMP", "HUMIDITY"]
 
-    sns.heatmap(merged_data.corr(), annot=True, mask=~np.tri(merged_data.corr().shape[1], k=-1, dtype=bool), cmap="coolwarm")
+    sns.heatmap(
+        merged_data.corr(),
+        annot=True,
+        mask=~np.tri(merged_data.corr().shape[1], k=-1, dtype=bool),
+        cmap="coolwarm",
+    )
     plt.show()
 
-def plot_pollutant_meteo_rel(pollutants: list[DataFrame], meteo: list[DataFrame], x_labels: list[str], y_labels: list[str]):
 
+def plot_pollutant_meteo_rel(
+    pollutants: list[DataFrame],
+    meteo: list[DataFrame],
+    x_labels: list[str],
+    y_labels: list[str],
+):
     import pandas as pd
-    import numpy as np
 
     fig, axs = plt.subplots(len(pollutants), len(meteo), squeeze=False)
 
     for i in range(len(pollutants)):
-        
-        pollutant = pollutants[i][['data', 'valore']]
-        pollutant['data'] = pd.to_datetime(pollutant['data'])
+        pollutant = pollutants[i][["data", "valore"]]
+        pollutant["data"] = pd.to_datetime(pollutant["data"])
 
         for j in range(len(meteo)):
-
             if j == 0:
                 axs[i][j].set_ylabel(y_labels[i])
 
@@ -130,67 +138,59 @@ def plot_pollutant_meteo_rel(pollutants: list[DataFrame], meteo: list[DataFrame]
             if x_labels[j] == "RN" or "WS":
                 meteo_s["data"] = pd.to_datetime(meteo_s["data"]) + pd.Timedelta(days=1)
 
-            
-
-            
-            meteo_s = meteo_s[["data", "valore"]].merge(pollutant, on="data", suffixes=(f"_{x_labels[j]}", f"_{y_labels[i]}"))
+            meteo_s = meteo_s[["data", "valore"]].merge(
+                pollutant, on="data", suffixes=(f"_{x_labels[j]}", f"_{y_labels[i]}")
+            )
             meteo_s.drop("data", axis=1, inplace=True)
             meteo_s.columns = [x_labels[j], y_labels[i]]
 
             axs[i][j].scatter(x_labels[j], y_labels[i], data=meteo_s)
             axs[i][j].grid(True)
 
-
-
-
-
-
     plt.show()
-    
-def time_series_histogram(data: DataFrame, time_unit: str, pollutant: str): 
+
+
+def time_series_histogram(data: DataFrame, time_unit: str, pollutant: str):
     import pandas as pd
-    import seaborn as sns
 
     data.columns = ["data", "valore"]
     data["data"] = pd.to_datetime(data["data"]).dt.strftime(time_unit)
-    data = data.groupby("data").mean().reset_index()[['data', 'valore']]
+    data = data.groupby("data").mean().reset_index()[["data", "valore"]]
 
     if time_unit == "%m":
-        data["data"] = pd.to_datetime(data["data"], format='%m').dt.strftime("%B")
+        data["data"] = pd.to_datetime(data["data"], format="%m").dt.strftime("%B")
 
-    plt.title(f'Media annuale di {pollutant}')
-    plt.bar(data["data"], data["valore"], align='center', alpha=0.5, color="blue")
+    plt.title(f"Media annuale di {pollutant}")
+    plt.bar(data["data"], data["valore"], align="center", alpha=0.5, color="blue")
     plt.xticks(rotation=90)
-    plt.ylabel('Valore medio')
+    plt.ylabel("Valore medio")
     plt.tight_layout()
     plt.show()
     plt.clf()
 
 
-
 def main():
-
     import os
     import pandas as pd
-    import seaborn as sns
     import numpy as np
 
-
-    xs = []
-    columns = []
-    for file in os.listdir(f"data/_processed/Brera/"):
-        df = pd.read_csv(f"data/_processed/Brera/{file}", parse_dates=['data'])
-        df['Day'] = df['data'].dt.day_of_year
-        df['Month'] = df['data'].dt.month
+    for file in os.listdir("data/_processed/Brera/"):
+        df = pd.read_csv(f"data/_processed/Brera/{file}", parse_dates=["data"])
+        df["Day"] = df["data"].dt.day_of_year
+        df["Month"] = df["data"].dt.month
 
         def encode(data, col, max_val):
             for i in range(1, 100):
-                data['Sin_'+col + str(i)] = np.sin(2 * i * np.pi * data[col]/max_val)
-                data['Cos_'+col + str(i)] = np.cos(2 * i * np.pi * data[col]/max_val)
+                data["Sin_" + col + str(i)] = np.sin(
+                    2 * i * np.pi * data[col] / max_val
+                )
+                data["Cos_" + col + str(i)] = np.cos(
+                    2 * i * np.pi * data[col] / max_val
+                )
             return data
 
-        df = encode(df, 'Day', 365)
-        df = encode(df, 'Month', 12)
+        df = encode(df, "Day", 365)
+        df = encode(df, "Month", 12)
 
         df.to_csv(f"data/_processed/Brera/multi{file}", index=False)
         # sns.heatmap(df.corr(), annot=True, mask=~np.tri(df.corr().shape[1], k=-1, dtype=bool), cmap="coolwarm")
