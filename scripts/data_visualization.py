@@ -184,25 +184,18 @@ def main():
         df['Month'] = df['data'].dt.month
 
         def encode(data, col, max_val):
-            data['Sin_'+col] = np.sin(2 * np.pi * data[col]/max_val)
-            data['Cos_'+col] = np.cos(2 * np.pi * data[col]/max_val)
+            for i in range(1, 100):
+                data['Sin_'+col + str(i)] = np.sin(2 * i * np.pi * data[col]/max_val)
+                data['Cos_'+col + str(i)] = np.cos(2 * i * np.pi * data[col]/max_val)
             return data
-        
+
         df = encode(df, 'Day', 365)
         df = encode(df, 'Month', 12)
 
-        df.to_csv(f"data/_processed/Brera/sin_cos_{file}", index=False)
-        sns.heatmap(df.corr(), annot=True, mask=~np.tri(df.corr().shape[1], k=-1, dtype=bool), cmap="coolwarm")
-        plt.tight_layout()
-        plt.show()
-        ys = []
-        rows = []
-        for file in os.listdir(f"data/_raw/Brera/meteo/"):
-            df = pd.read_csv(f"data/_raw/Brera/meteo/{file}")[['data', 'valore']]
-            ys.append(df)
-            rows.append(file.split(".")[0])
-
-
+        df.to_csv(f"data/_processed/Brera/multi{file}", index=False)
+        # sns.heatmap(df.corr(), annot=True, mask=~np.tri(df.corr().shape[1], k=-1, dtype=bool), cmap="coolwarm")
+        # plt.tight_layout()
+        # plt.show()
 
 
 if __name__ == "__main__":
