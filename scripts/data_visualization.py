@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from pandas import DataFrame
+import json
 
 
 pollutants = {
@@ -59,16 +60,16 @@ def pollutants_heatmap(pollutants: list[DataFrame], columns: list[str]):
     from functools import reduce
 
     df = reduce(
-        lambda df1, df2: pd.merge(df1, df2, on="data", suffixes=("", "_")), pollutants
+        lambda df1, df2: pd.merge(df1, df2, on="date", suffixes=("", "_")), pollutants
     )
 
-    df.drop("data", axis=1, inplace=True)
+    df.drop("date", axis=1, inplace=True)
     df.columns = columns
 
     sns.heatmap(
         df.corr(),
         annot=True,
-        mask=~np.tri(df.corr().shape[1], k=-1, dtype=bool),
+        mask=~np.tri(df.corr().shape[1], k=0, dtype=bool),
         cmap="coolwarm",
     )
     plt.show()
@@ -153,31 +154,111 @@ def plot_pollutant_meteo_rel(
 def time_series_histogram(data: DataFrame, time_unit: str, pollutant: str):
     import pandas as pd
 
-    data.columns = ["data", "valore"]
-    data["data"] = pd.to_datetime(data["data"]).dt.strftime(time_unit)
-    data = data.groupby("data").mean().reset_index()[["data", "valore"]]
+    data = data[["date", "value"]]
+    data.columns = ["date", "value"]
+    data["date"] = pd.to_datetime(data["date"]).dt.strftime(time_unit)
+    data = data.groupby("date").mean().reset_index()[["date", "value"]]
 
     if time_unit == "%m":
-        data["data"] = pd.to_datetime(data["data"], format="%m").dt.strftime("%B")
+        data["date"] = pd.to_datetime(data["date"], format="%m").dt.strftime("%B")
 
     plt.title(f"Media annuale di {pollutant}")
-    plt.bar(data["data"], data["valore"], align="center", alpha=0.5, color="blue")
+    plt.bar(data["date"], data["value"], align="center", alpha=0.5, color="blue")
     plt.xticks(rotation=90)
     plt.ylabel("Valore medio")
     plt.tight_layout()
     plt.show()
     plt.clf()
 
+def pollutant_skewness_kurtosis(data: DataFrame):
+    from scipy.stats import skew, kurtosis
+    
+
+    skewness = skew(data["value"])
+    kurt = kurtosis(data["value"])
+
+    
+
+    return {"skewness": skewness, "kurtosis": kurt}
+
+def bar_plot_stats(data: DataFrame, name: str, location: str, scenario: str):
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+
+    plt.figure(figsize=(14, 6))
+
+    #remove padding left
+    plt.subplot(1, 2, 1)
+    
+    barWidth = 0.35
+    r1 = np.arange(len(data["Model"]))
+    r2 = [x + barWidth for x in r1]
+
+    
+    bars = plt.barh(r1, round(data["Train R2"], 4), color='cornflowerblue', height=barWidth, edgecolor='grey', label="Train data")
+    bars1 = plt.barh(r2, round(data["test R2"], 4), color='darkorange', height=barWidth, edgecolor='grey', label="Test data")
+
+    ax = plt.gca()
+    ax.bar_label(bars, padding=3, label_type='center')
+    ax.bar_label(bars1, padding=3, label_type='center')
+
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                    box.width, box.height * 0.9])
+
+    # Put a legend below current axis
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+            fancybox=True, shadow=True, ncol=5)
+    
+    plt.grid(True, axis='x')
+    plt.yticks([r + barWidth/2 for r in range(len(data["Model"]))],  ["RFR", "GBOOST", "RIDGE", "SVR"])
+    plt.title(f'Metrica di R$^{2}$ per {name} a {location}')
+
+    # Creazione del grafico per MAE e RMSE
+    plt.subplot(1, 2, 2)
+
+    barWidth = 0.15
+    r1 = np.arange(len(data["Model"]))
+    r2 = [x + barWidth for x in r1]
+    r3 = [x + barWidth for x in r2]
+    r4 = [x + barWidth for x in r3]
+
+    bar2 = plt.bar(r1, round(data["Train MAE"], 4), color='green', width=barWidth, edgecolor='grey', label='Train MAE')
+    bar3 = plt.bar(r2, round(data["Test MAE"], 4), color='lightgreen', width=barWidth, edgecolor='grey', label='Test MAE')
+    bar4 = plt.bar(r3, round(data["Train RMSE"], 4), color='blue', width=barWidth, edgecolor='grey', label='Train RMSE')
+    bar5 = plt.bar(r4, round(data["Test RMSE"], 4), color='lightblue', width=barWidth, edgecolor='grey', label='Test RMSE')
+
+    ax1 = plt.gca()
+
+    box1 = ax.get_position()
+
+    # Put a legend to the right of the current axis
+    ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+    plt.xticks([r + 1.5*barWidth for r in range(len(data["Model"]))], ["RFR", "GBOOST", "RIDGE", "SVR"])
+    plt.title(f'Metriche di Errore per {name} a {location}')
+    plt.grid(True, axis='y')
+    
+    plt.tight_layout()
+    plt.subplots_adjust(bottom=0.13)
+
+
+    plt.savefig(f"imgs/{scenario}/{location}_{name}.png")
+    plt.close()
 
 def main():
     import os
     import pandas as pd
+    """ import os
+    import pandas as pd
     import numpy as np
 
     for file in os.listdir("data/_processed/Brera/"):
-        df = pd.read_csv(f"data/_processed/Brera/{file}", parse_dates=["data"])
-        df["Day"] = df["data"].dt.day_of_year
-        df["Month"] = df["data"].dt.month
+        df = pd.read_csv(f"data/_processed/Brera/{file}", parse_dates=["date"])
+        df["Day"] = df["date"].dt.day_of_year
+        df["Month"] = df["date"].dt.month
 
         def encode(data, col, max_val):
             for i in range(1, 100):
@@ -195,7 +276,72 @@ def main():
         df.to_csv(f"data/_processed/Brera/multi{file}", index=False)
         # sns.heatmap(df.corr(), annot=True, mask=~np.tri(df.corr().shape[1], k=-1, dtype=bool), cmap="coolwarm")
         # plt.tight_layout()
-        # plt.show()
+        # plt.show() """
+    
+    """ dfs = []
+    columns = []
+    
+
+    for poll in ["PM10", "PM25"]:
+        df = pd.read_csv(f"data/_processed/Brera/{poll}.csv")[['date', 'value']]
+        df.columns = ['date', f'{poll}_Brera']   
+        columns.append(f'{poll}_Brera')
+        dfs.append(df)
+    
+        df = pd.read_csv(f"data/_processed/Citta Studi/{poll}.csv")[['date', 'value']]
+        df.columns = ['date', f'{poll}_Citta_Studi']  
+        columns.append(f'{poll}_Citta_Studi') 
+        dfs.append(df)
+
+        df = pd.read_csv(f"data/_processed/Montalbino/{poll}.csv")[['date', 'value']]
+        df.columns = ['date', f'{poll}_Montalbino']   
+        columns.append(f'{poll}_Montalbino')
+        dfs.append(df)
+
+    pollutants_heatmap(dfs, columns)
+ """
+    """ import pandas as pd
+    
+
+    data = {}
+
+    for folder in ["Brera", "Citta Studi", "Montalbino"]:
+        data[folder] = {}
+        for file in os.listdir(f"data/_processed/{folder}/"):
+            df = pd.read_csv(f"data/_processed/{folder}/{file}")
+            data[folder][file.split('.')[0]] = pollutant_skewness_kurtosis(df)
+
+    with open ("data/stats/kurt_skew.json", "w") as f:
+        json.dump(data, f, indent=4) """
+    
+    """ senarios = ["Scenario 1", "Scenario 2", "Scenario 3"]
+
+    for scenario in senarios:
+
+        folders = os.listdir(f"data/stats/{scenario}")
+
+        for folder in folders:
+
+            files = os.listdir(f"data/stats/{scenario}/{folder}")
+
+            for file in files:
+
+                df = pd.read_csv(f"data/stats/{scenario}/{folder}/{file}")
+
+                bar_plot_stats(df, file.split(".")[0], folder, scenario)    """   
+
+
+    df = pd.read_csv("data/_processed/Brera/PM25.csv")[["date", "value"]]
+    #group by year and calculate average of value
+    df["date"] = pd.to_datetime(df["date"]).dt.to_period("Y")
+    df = df.groupby(df["date"]).mean().reset_index()
+    print(df)
+    df.plot(x="date", y="value")
+    plt.show()     
+
+
+
+
 
 
 if __name__ == "__main__":

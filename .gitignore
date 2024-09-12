@@ -12,6 +12,7 @@ build/
 develop-eggs/
 dist/
 downloads/
+test/
 eggs/
 .eggs/
 lib/
@@ -163,4 +164,7 @@ cython_debug/
 
 .ruff_cache/
 .vscode/
-_*/
+_raw/
+_processed/
+scripts/tests/test_cross_validation.py
+scripts/tests/test_seasonality.py

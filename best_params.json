@@ -1,0 +1,24 @@
+{
+    "GradientBoosting": {
+        "learning_rate": 0.01622834419282511,
+        "max_depth": 1,
+        "min_samples_leaf": 8,
+        "min_samples_split": 2,
+        "n_estimators": 891,
+        "subsample": 0.7245649181813919
+    },
+    "RandomForest": {
+        "max_depth": 8,
+        "max_features": 1,
+        "min_samples_leaf": 2,
+        "n_estimators": 512
+    },
+    "Ridge": {
+        "alpha": 0.9999424222766153
+    },
+    "SVM": {
+        "C": 0.9453270930989953,
+        "epsilon": 0.9853208514638883,
+        "kernel": "linear"
+    }
+}
