@@ -10,7 +10,7 @@ pollutants_name = {
     "Biossido di Azoto": "NO2",
     "Ozono": "O3",
     "PM10 (SM2005)": "PM10",
-    "Particelle sospese PM2.5": "PM2.5",
+    "Particelle sospese PM2.5": "PM25",
     "Benzene": "C6H6",
 }
 

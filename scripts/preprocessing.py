@@ -170,21 +170,21 @@ def log_transform(dfs: list[DataFrame], pollutants: list):
     from matplotlib import pyplot as plt
     import seaborn as sns
 
-    fig, axs = plt.subplots(len(dfs), 4, figsize=(15, 6))
+    fig, axs = plt.subplots(len(dfs) + 1, 4, figsize=(15, 6))
 
     for i, data in enumerate(dfs):
-        df_log = np.log(data["valore"])
-        df_sqrt = np.sqrt(data["valore"])
-        df_cbrt = np.cbrt(data["valore"])
+        df_log = np.log(data["value"])
+        df_sqrt = np.sqrt(data["value"])
+        df_cbrt = np.cbrt(data["value"])
 
-        skewness_before = skewness(data["valore"])
+        skewness_before = skewness(data["value"])
         skewness_after_log = skewness(df_log)
         skewness_after_sqrt = skewness(df_sqrt)
         skewness_after_cbrt = skewness(df_cbrt)
 
-        sns.histplot(data["valore"], kde=True, color="red", ax=axs[i][0], legend=False)
+        sns.histplot(data["value"], kde=True, color="red", ax=axs[i][0], legend=False)
         axs[i][0].set(
-            xlabel=f"{pollutants[i]}\nSkewness:{round(skewness_before, 2)}\nKurtuosis:{kurtosis(round(data['valore'], 2))}"
+            xlabel=f"{pollutants[i]}\nSkewness:{round(skewness_before, 2)}\nKurtuosis:{kurtosis(round(data['value'], 2))}"
         )
 
         sns.histplot(
@@ -238,14 +238,30 @@ def standardize_data(data: list[DataFrame], columns: list[str]):
 
 
 def main():
-    df = pd.read_csv("data/_processed/Brera/PM10.csv")
+    """df = pd.read_csv("data/_processed/Brera/PM10.csv")
 
-    """ df.hist(column="PM10", bins=20)
-    plt.show() """
+     df.hist(column="PM10", bins=20)
+    plt.show() 
 
     df1 = standardize_data([df["PM10"]], ["PM10"])
     df1.hist(column="PM10", bins=20)
-    plt.show()
+    plt.show()"""
+
+    from os import listdir
+
+    dfs = []
+    pls = []
+
+    for file in listdir("data/_processed/Citta Studi/"):
+        df = pd.read_csv(f"data/_processed/Citta Studi/{file}")
+        pl = file.split(".")[0]
+        pls.append(pl)
+        dfs.append(df)
+    
+
+    for i in range(len(dfs)):
+        
+        log_transform([dfs[i]], [pls[i]])
 
 
 if __name__ == "__main__":
