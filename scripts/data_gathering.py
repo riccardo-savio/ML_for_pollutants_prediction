@@ -96,6 +96,8 @@ def dw_ARPA_pollutants():
 
     print("Downloading pollutants data...")
 
+ 
+
     for station in stations["air"].keys():
         for id in stations["air"][station]["sensors"]:
             df = pd.DataFrame()
@@ -104,7 +106,7 @@ def dw_ARPA_pollutants():
                     pollutant_code,
                     select="idsensore, date_trunc_ymd(data), AVG(valore)",
                     group="idsensore, date_trunc_ymd(data)",
-                    where=f"idsensore = '{id}' AND stato = 'VA' AND valore >= 0 ",
+                    where=f"idsensore = '{id}' AND stato = 'VA'",
                 )
 
                 if (
@@ -141,6 +143,8 @@ def dw_ARPA_meteo():
 
     print("Downloading meteo data...")
 
+    
+
     for meteo_type in meteo_codes.keys():
         for station in stations["meteo"].keys():
             for id in stations["meteo"][station]["sensors"]:
@@ -153,7 +157,7 @@ def dw_ARPA_meteo():
                         code,
                         select=f"idsensore, date_trunc_ymd(data), {op}",
                         group="idsensore, date_trunc_ymd(data)",
-                        where=f"idsensore = '{id}' AND stato = 'VA' AND valore >= 0 ",
+                        where=f"idsensore = '{id}' AND stato = 'VA'",
                     )
 
                     if (
@@ -181,9 +185,9 @@ def dw_ARPA_meteo():
 
 
 def main():
-    dw_ARPA_air_sensors()
-    dw_ARPA_meteo_sensors()
-    dw_ARPA_pollutants()
+    """ dw_ARPA_air_sensors()
+    dw_ARPA_meteo_sensors() """
+    #dw_ARPA_pollutants()
     dw_ARPA_meteo()
 
 
