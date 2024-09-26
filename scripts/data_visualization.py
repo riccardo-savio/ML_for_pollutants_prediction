@@ -16,28 +16,40 @@ pollutants = {
 sensor_names = {}
 
 
-def plot_dfs(data: list[DataFrame]):
+def plot_dfs(data: list[DataFrame], labels: list[str], standardize: bool = False, rolling: bool = False):
     import pandas as pd
     import matplotlib.dates as mdates
+    import numpy as np
+    from sklearn.preprocessing import StandardScaler
 
     fig, axs = plt.subplots(len(data), 1, figsize=(20, 15))
 
     for i in range(len(axs)):
-        print()
         row = data[i]
-        row["data"] = pd.to_datetime(row["data"])
+        if standardize:
+            row["value"] = StandardScaler().fit_transform(row["value"].values.reshape(-1, 1))
+        row["date"] = pd.to_datetime(row["date"])
 
-        axs[i].plot("data", "valore", data=row)
+        axs[i].plot("date", "value", data=row)
+        axs[i].plot("date", "cos(1,freq=YE-DEC)", data=row)
         axs[i].xaxis.set_major_locator(mdates.YearLocator(2))
         axs[i].xaxis.set_visible(False)
         axs[i].grid(True)
+        axs[i].legend([labels[i]])
+        #aggiungi una curva di media mobile
+        if rolling:
+            row["value"] = row["value"].rolling(window=30).mean()
+            axs[i].plot("date", "value", data=row, color="red")
+
+
 
     axs[len(axs) - 1].xaxis.set_visible(True)
     axs[len(axs) - 1].xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
 
     for label in axs[len(axs) - 1].get_xticklabels(which="major"):
         label.set(rotation=30, horizontalalignment="right")
-
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.95, bottom=0.09, hspace=0.2, left=0.05, right=0.95)
     plt.show()
 
 
@@ -49,29 +61,27 @@ def boxplot_dfs(data: list[DataFrame], columns: list[str]):
     df.columns = columns
 
     sns.boxplot(data=df)
-    plt.savefig("imgs/Brera .png")
+    plt.savefig("imgs/boxplot.png")
+    plt.show()
 
 
-def pollutants_heatmap(pollutants: list[DataFrame], columns: list[str]):
+def heatmap(dfs: list[DataFrame], savefig: bool = False, path: str = "imgs/heatmap.png"):
     import seaborn as sns
-    import pandas as pd
     import numpy as np
 
-    from functools import reduce
-
-    df = reduce(
-        lambda df1, df2: pd.merge(df1, df2, on="date", suffixes=("", "_")), pollutants
-    )
-
-    df.drop("date", axis=1, inplace=True)
-    df.columns = columns
-
+    fig = plt.figure(figsize=(20, 10))
     sns.heatmap(
-        df.corr(),
+        dfs.corr(),
         annot=True,
-        mask=~np.tri(df.corr().shape[1], k=0, dtype=bool),
+        mask=~np.tri(dfs.corr().shape[1], k=0, dtype=bool),
         cmap="coolwarm",
+        
     )
+    plt.yticks(rotation=0)
+    plt.tight_layout()
+    fig.subplots_adjust(left=0.2, right=0.9, top=0.9, bottom=0.2)
+    if savefig:
+        plt.savefig(path)
     plt.show()
 
 
@@ -251,6 +261,8 @@ def bar_plot_stats(data: DataFrame, name: str, location: str, scenario: str):
 def main():
     import os
     import pandas as pd
+    import numpy as np
+    import seaborn as sns
     """ import os
     import pandas as pd
     import numpy as np
@@ -277,67 +289,30 @@ def main():
         # sns.heatmap(df.corr(), annot=True, mask=~np.tri(df.corr().shape[1], k=-1, dtype=bool), cmap="coolwarm")
         # plt.tight_layout()
         # plt.show() """
+
+    colors = ["blue", "red", "green", "orange", "purple", "black", "yellow"]
+
+    data = []
+
+    from functools import reduce
+    import seaborn as sns
     
-    """ dfs = []
-    columns = []
+    from statsmodels.tsa.deterministic import CalendarFourier, DeterministicProcess
+
+    labels =[]
     
+    for loc in ["Brera"]:
+        files = os.listdir(f"data/_processed/{loc}/")
+        for i in range(len(files)):
+            df = pd.read_csv(f"data/_processed/{loc}/{files[i]}", parse_dates=["date"]).set_index("date").to_period("D")
+            fourier = CalendarFourier(freq="YE", order=1)
+            dp = DeterministicProcess(index=df.index, constant=False, order=1, seasonal=False, additional_terms=[fourier], drop=True)
+            df = pd.concat([df, dp.in_sample()], axis=1)
+            df['date'] = df.index.to_timestamp()
+            data.append(df)
+            labels.append(files[i].split(".")[0])
 
-    for poll in ["PM10", "PM25"]:
-        df = pd.read_csv(f"data/_processed/Brera/{poll}.csv")[['date', 'value']]
-        df.columns = ['date', f'{poll}_Brera']   
-        columns.append(f'{poll}_Brera')
-        dfs.append(df)
-    
-        df = pd.read_csv(f"data/_processed/Citta Studi/{poll}.csv")[['date', 'value']]
-        df.columns = ['date', f'{poll}_Citta_Studi']  
-        columns.append(f'{poll}_Citta_Studi') 
-        dfs.append(df)
-
-        df = pd.read_csv(f"data/_processed/Montalbino/{poll}.csv")[['date', 'value']]
-        df.columns = ['date', f'{poll}_Montalbino']   
-        columns.append(f'{poll}_Montalbino')
-        dfs.append(df)
-
-    pollutants_heatmap(dfs, columns)
- """
-    """ import pandas as pd
-    
-
-    data = {}
-
-    for folder in ["Brera", "Citta Studi", "Montalbino"]:
-        data[folder] = {}
-        for file in os.listdir(f"data/_processed/{folder}/"):
-            df = pd.read_csv(f"data/_processed/{folder}/{file}")
-            data[folder][file.split('.')[0]] = pollutant_skewness_kurtosis(df)
-
-    with open ("data/stats/kurt_skew.json", "w") as f:
-        json.dump(data, f, indent=4) """
-    
-    """ senarios = ["Scenario 1", "Scenario 2", "Scenario 3"]
-
-    for scenario in senarios:
-
-        folders = os.listdir(f"data/stats/{scenario}")
-
-        for folder in folders:
-
-            files = os.listdir(f"data/stats/{scenario}/{folder}")
-
-            for file in files:
-
-                df = pd.read_csv(f"data/stats/{scenario}/{folder}/{file}")
-
-                bar_plot_stats(df, file.split(".")[0], folder, scenario)    """   
-
-
-    df = pd.read_csv("data/_processed/Brera/PM25.csv")[["date", "value"]]
-    #group by year and calculate average of value
-    df["date"] = pd.to_datetime(df["date"]).dt.to_period("Y")
-    df = df.groupby(df["date"]).mean().reset_index()
-    print(df)
-    df.plot(x="date", y="value")
-    plt.show()     
+    plot_dfs(data, labels, standardize=True)
 
 
 
