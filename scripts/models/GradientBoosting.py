@@ -11,7 +11,9 @@ class GradientBoostingModel:
         self.param_grid = param_grid or {
             'gb__n_estimators': [100, 200, 300],
             'gb__learning_rate': [0.01, 0.1, 1],
-            'gb__max_depth': [3, 5, 7]
+            'gb__max_depth': [3, 5, 7],
+            'gb__min_samples_split': [2, 4, 6],
+            'gb__min_samples_leaf': [1, 2, 3]
         }
         self.model = GradientBoostingRegressor()
         self.best_params = None

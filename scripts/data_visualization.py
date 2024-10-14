@@ -24,18 +24,32 @@ def plot_dfs(data: list[DataFrame], labels: list[str], standardize: bool = False
 
     fig, axs = plt.subplots(len(data), 1, figsize=(20, 15))
 
+    #find the minimum and maximum date in date column of all dataframes
+    min_date = min([min(data[i]["date"]) for i in range(len(data))])
+    max_date = max([max(data[i]["date"]) for i in range(len(data))])
+
+
+
+    r= pd.date_range(start=min_date, end=max_date, freq="D").to_period("D")
+    print(r)
+
     for i in range(len(axs)):
-        row = data[i]
+
+        row = pd.DataFrame({"date": r.to_timestamp(), "b": np.zeros(len(r))}).set_index("date")
+        data[i]["date"] = pd.to_datetime(data[i]["date"])
+        row = row.merge(data[i], how="left", on="date")
+        #fill empty values with method ffill
+        row["value"] = row["value"].fillna(method="bfill")
+        print(row)
+        
         if standardize:
             row["value"] = StandardScaler().fit_transform(row["value"].values.reshape(-1, 1))
-        row["date"] = pd.to_datetime(row["date"])
 
         axs[i].plot("date", "value", data=row)
-        axs[i].plot("date", "cos(1,freq=YE-DEC)", data=row)
         axs[i].xaxis.set_major_locator(mdates.YearLocator(2))
-        axs[i].xaxis.set_visible(False)
+        axs[i].xaxis.set_visible(True)
         axs[i].grid(True)
-        axs[i].legend([labels[i]])
+        axs[i].legend([labels[i]], loc="upper right")
         #aggiungi una curva di media mobile
         if rolling:
             row["value"] = row["value"].rolling(window=30).mean()
@@ -65,7 +79,7 @@ def boxplot_dfs(data: list[DataFrame], columns: list[str]):
     plt.show()
 
 
-def heatmap(dfs: list[DataFrame], savefig: bool = False, path: str = "imgs/heatmap.png"):
+def heatmap(dfs: DataFrame, savefig: bool = False, path: str = "imgs/heatmap.png"):
     import seaborn as sns
     import numpy as np
 
@@ -83,83 +97,6 @@ def heatmap(dfs: list[DataFrame], savefig: bool = False, path: str = "imgs/heatm
     if savefig:
         plt.savefig(path)
     plt.show()
-
-
-def pollutant_meteo_correlation(
-    pollutant: DataFrame, meteo: list[DataFrame], x_label: list[str], y_label: list[str]
-):
-    import pandas as pd
-    import seaborn as sns
-    import numpy as np
-
-    HUMIDITY = pd.read_csv("data/ferno/humidity.csv")
-    RAIN = pd.read_csv("data/ferno/rain.csv")
-    WIND = pd.read_csv("data/ferno/wind.csv")
-    TEMP = pd.read_csv("data/ferno/temp.csv")
-    PM10 = pd.read_csv("data/ferno/NO2.csv")
-
-    HUMIDITY.drop("idsensore", axis=1, inplace=True)
-    RAIN.drop("idsensore", axis=1, inplace=True)
-    WIND.drop("idsensore", axis=1, inplace=True)
-    TEMP.drop("idsensore", axis=1, inplace=True)
-
-    merged_data = (
-        PM10.merge(RAIN, on="data", suffixes=("", "_rain"))
-        .merge(WIND, on="data", suffixes=("", "_wind"))
-        .merge(TEMP, on="data", suffixes=("", "_temp"))
-        .merge(HUMIDITY, on="data", suffixes=("", "_PM10"))
-    )
-
-    merged_data.drop("data", axis=1, inplace=True)
-    merged_data.columns = ["PM10", "RAIN", "WIND", "TEMP", "HUMIDITY"]
-
-    sns.heatmap(
-        merged_data.corr(),
-        annot=True,
-        mask=~np.tri(merged_data.corr().shape[1], k=-1, dtype=bool),
-        cmap="coolwarm",
-    )
-    plt.show()
-
-
-def plot_pollutant_meteo_rel(
-    pollutants: list[DataFrame],
-    meteo: list[DataFrame],
-    x_labels: list[str],
-    y_labels: list[str],
-):
-    import pandas as pd
-
-    fig, axs = plt.subplots(len(pollutants), len(meteo), squeeze=False)
-
-    for i in range(len(pollutants)):
-        pollutant = pollutants[i][["data", "valore"]]
-        pollutant["data"] = pd.to_datetime(pollutant["data"])
-
-        for j in range(len(meteo)):
-            if j == 0:
-                axs[i][j].set_ylabel(y_labels[i])
-
-            if i == len(pollutants) - 1:
-                axs[i][j].set_xlabel(x_labels[j])
-
-            meteo_s = meteo[j][["data", "valore"]]
-            meteo_s["data"] = pd.to_datetime(meteo_s["data"])
-
-            if x_labels[j] == "RN" or "WS":
-                meteo_s["data"] = pd.to_datetime(meteo_s["data"]) + pd.Timedelta(days=1)
-
-            meteo_s = meteo_s[["data", "valore"]].merge(
-                pollutant, on="data", suffixes=(f"_{x_labels[j]}", f"_{y_labels[i]}")
-            )
-            meteo_s.drop("data", axis=1, inplace=True)
-            meteo_s.columns = [x_labels[j], y_labels[i]]
-
-            axs[i][j].scatter(x_labels[j], y_labels[i], data=meteo_s)
-            axs[i][j].grid(True)
-
-    plt.show()
-
 
 def time_series_histogram(data: DataFrame, time_unit: str, pollutant: str):
     import pandas as pd
@@ -191,7 +128,21 @@ def pollutant_skewness_kurtosis(data: DataFrame):
 
     return {"skewness": skewness, "kurtosis": kurt}
 
-def bar_plot_stats(data: DataFrame, name: str, location: str, scenario: str):
+def plot_auto_correlation(data: list[DataFrame], pollutants: list[str], savefig: bool = False, path: str = "imgs/autocorrelation.png"):
+    from statsmodels.graphics.tsaplots import plot_acf
+
+    fig, axs = plt.subplots(len(data), 1, figsize=(20, 15))
+
+    for i in range(len(data)):
+        plot_acf(data[i]["value"], lags=365, ax=axs[i])
+        axs[i].set_title(f"Autocorrelazione di {pollutants[i]}")
+
+    plt.tight_layout()
+    if savefig:
+        plt.savefig(path)
+    plt.show()
+
+def bar_plot_stats(data: DataFrame, name: str, location: str, scenario: str, savefig: bool = False):
 
     import numpy as np
     import matplotlib.pyplot as plt
@@ -208,7 +159,7 @@ def bar_plot_stats(data: DataFrame, name: str, location: str, scenario: str):
 
     
     bars = plt.barh(r1, round(data["Train R2"], 4), color='cornflowerblue', height=barWidth, edgecolor='grey', label="Train data")
-    bars1 = plt.barh(r2, round(data["test R2"], 4), color='darkorange', height=barWidth, edgecolor='grey', label="Test data")
+    bars1 = plt.barh(r2, round(data["Test R2"], 4), color='darkorange', height=barWidth, edgecolor='grey', label="Test data")
 
     ax = plt.gca()
     ax.bar_label(bars, padding=3, label_type='center')
@@ -245,7 +196,8 @@ def bar_plot_stats(data: DataFrame, name: str, location: str, scenario: str):
     box1 = ax.get_position()
 
     # Put a legend to the right of the current axis
-    ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+            fancybox=True, shadow=True, ncol=5)
 
     plt.xticks([r + 1.5*barWidth for r in range(len(data["Model"]))], ["RFR", "GBOOST", "RIDGE", "SVR"])
     plt.title(f'Metriche di Errore per {name} a {location}')
@@ -254,70 +206,46 @@ def bar_plot_stats(data: DataFrame, name: str, location: str, scenario: str):
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.13)
 
-
-    plt.savefig(f"imgs/{scenario}/{location}_{name}.png")
+    if savefig:
+        plt.savefig(f"imgs/{scenario}/{location}_{name}.png")
+    else:
+        plt.show()
     plt.close()
+
+def merge_dataframes(data: list[DataFrame], on: str) -> DataFrame:
+    from functools import reduce
+    return reduce(lambda x, y: x.merge(y, on=on), data).drop_duplicates()
 
 def main():
     import os
     import pandas as pd
     import numpy as np
     import seaborn as sns
-    """ import os
-    import pandas as pd
-    import numpy as np
-
-    for file in os.listdir("data/_processed/Brera/"):
-        df = pd.read_csv(f"data/_processed/Brera/{file}", parse_dates=["date"])
-        df["Day"] = df["date"].dt.day_of_year
-        df["Month"] = df["date"].dt.month
-
-        def encode(data, col, max_val):
-            for i in range(1, 100):
-                data["Sin_" + col + str(i)] = np.sin(
-                    2 * i * np.pi * data[col] / max_val
-                )
-                data["Cos_" + col + str(i)] = np.cos(
-                    2 * i * np.pi * data[col] / max_val
-                )
-            return data
-
-        df = encode(df, "Day", 365)
-        df = encode(df, "Month", 12)
-
-        df.to_csv(f"data/_processed/Brera/multi{file}", index=False)
-        # sns.heatmap(df.corr(), annot=True, mask=~np.tri(df.corr().shape[1], k=-1, dtype=bool), cmap="coolwarm")
-        # plt.tight_layout()
-        # plt.show() """
-
-    colors = ["blue", "red", "green", "orange", "purple", "black", "yellow"]
-
-    data = []
-
     from functools import reduce
     import seaborn as sns
     
     from statsmodels.tsa.deterministic import CalendarFourier, DeterministicProcess
 
-    labels =[]
+    """ path = "data/_processed/Brera/"
+    data = pd.DataFrame({"date": pd.date_range(start="2013-01-01", end="2024-01-01", freq="D").to_period("D")}).set_index("date")
+    i = 0
+    for file in os.listdir(path):
+        
+        df = pd.read_csv(path + file, parse_dates=["date"]).set_index("date").to_period("D").drop(columns=["value_dayb"])
+        if i != 0:
+            df = df[["value"]]
+        i += 1
+        df.rename(columns={"value": file.split(".")[0]}, inplace=True)
+        data = merge_dataframes([df, data], "date")
     
-    for loc in ["Brera"]:
-        files = os.listdir(f"data/_processed/{loc}/")
-        for i in range(len(files)):
-            df = pd.read_csv(f"data/_processed/{loc}/{files[i]}", parse_dates=["date"]).set_index("date").to_period("D")
-            fourier = CalendarFourier(freq="YE", order=1)
-            dp = DeterministicProcess(index=df.index, constant=False, order=1, seasonal=False, additional_terms=[fourier], drop=True)
-            df = pd.concat([df, dp.in_sample()], axis=1)
-            df['date'] = df.index.to_timestamp()
-            data.append(df)
-            labels.append(files[i].split(".")[0])
+    heatmap(data) """
 
-    plot_dfs(data, labels, standardize=True)
-
-
-
-
-
+    for scenario in ["Scenario 1", "Scenario 2", "Scenario 3"]:
+        for location in os.listdir("data/stats/" + scenario):
+            for file in os.listdir("data/stats/" + scenario + "/" + location):
+                df = pd.read_csv("data/stats/" + scenario + "/" + location + "/" + file)
+                bar_plot_stats(df, file.split(".")[0], location, scenario, savefig=True)
+    
 
 if __name__ == "__main__":
     main()

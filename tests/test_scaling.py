@@ -51,24 +51,10 @@ def train_and_evaluate(models: list[object], train_data: pd.DataFrame, test_data
 
 if __name__ == "__main__":
     
-    for file in os.listdir("data/_processed/Brera/"):
-
-        data = pd.read_csv(f"data/_processed/Brera/{file}")
-        data.drop(columns=["date"], inplace=True)
-
-        train, test = train_test_split(data, test_size=0.2, random_state=42)
-        features, target = data.columns.difference(["date", "value"]), 'value'
-
-        models = {
-            "Random Forest": RandomForest.RandomForestModel(),
-            "Gradient Boosting": GradientBoosting.GradientBoostingModel(),
-            "Ridge Regression": RidgeRegression.RidgeRegressionModel(),
-            "Support Vector Machine": SupportVectorMachine.SupportVectorMachineModel(),
-        }
-
-        stats, params = train_and_evaluate(models, train, test, features, target)
-        print(stats)
-
+    for file in os.listdir("data/_processed/Brera"):
+        df = pd.read_csv("data/_processed/Brera/" + file, parse_dates=["date"]).set_index("date").to_period("D")
+        print(file)
+        print(df.describe())
 
     
 

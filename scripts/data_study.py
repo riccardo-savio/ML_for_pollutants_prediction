@@ -1,5 +1,5 @@
 import pandas as pd
-from models import GradientBoosting, RandomForest, SupportVectorMachine, RidgeRegression
+from models import GradientBoosting, RandomForest, SupportVectorMachine, RidgeRegression, XGBoost
 from sklearn.model_selection import train_test_split
 from statsmodels.tsa.deterministic import CalendarFourier, DeterministicProcess
 import os
@@ -10,8 +10,12 @@ def prepare_data(path: str, scenario: int, near_loc: list[pd.DataFrame]) -> pd.D
 
     if scenario in [2, 3]:
         fourier = CalendarFourier(freq="YE", order=1)
-        dp = DeterministicProcess(index=data.index, constant=False, order=1, seasonal=False, additional_terms=[fourier], drop=True)
-        data = pd.concat([data, dp.in_sample()], axis=1)
+        #dp = DeterministicProcess(index=data.index, constant=False, order=1, seasonal=False, additional_terms=[fourier], drop=True)
+        fourier = fourier.in_sample(index=data.index)
+        fourier.columns = ["sin1", "cos(freq=YEAR-DEC)"]
+        fourier.drop(columns=["sin1"], inplace=True)
+
+        data = pd.concat([data, fourier], axis=1)
         if scenario == 3:
             for near in near_loc:
                 data = data.merge(near["value"], on="date", how="left", suffixes=("", "_near"))
@@ -38,7 +42,7 @@ def dev_models(path: str, scenario: int = 1, near_loc: list[pd.DataFrame] = None
         "Random Forest": RandomForest.RandomForestModel(),
         "Gradient Boosting": GradientBoosting.GradientBoostingModel(),
         "Ridge Regression": RidgeRegression.RidgeRegressionModel(),
-        "Support Vector Machine": SupportVectorMachine.SupportVectorMachineModel(),
+        "Support Vector Machine": SupportVectorMachine.SupportVectorMachineModel()
     }
     
     stats, params = train_and_evaluate(models, train_data, test_data, features, target)
@@ -80,7 +84,7 @@ def process_files(folder: str):
 
 def main():
     for folder in ["Brera", "Citta Studi", "Montalbino"]:
-        process_files(folder)
+        process_files(folder) 
 
 if __name__ == "__main__":
     main()

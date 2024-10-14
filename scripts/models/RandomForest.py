@@ -10,7 +10,9 @@ class RandomForestModel:
         # Imposta la griglia dei parametri di default
         self.param_grid = param_grid or {
             'rf__n_estimators': [100, 200, 300],
-            'rf__max_depth': [3, 5, 7]
+            'rf__max_depth': [3, 5, 7],
+            'rf__min_samples_split': [2, 4, 6],
+            'rf__min_samples_leaf': [1, 2, 3]
         }
         self.model = RandomForestRegressor()
         self.best_params = None

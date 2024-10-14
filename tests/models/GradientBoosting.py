@@ -6,7 +6,7 @@ from sklearn.metrics import mean_absolute_error, root_mean_squared_error, r2_sco
 import joblib
 
 class GradientBoostingModel:
-    def __init__(self, param_grid=None):
+    def __init__(self, param_grid=None, best_params=None, train_score=None):
         # Imposta la griglia dei parametri di default
         self.param_grid = param_grid or {
             'gb__n_estimators': [100, 200, 300],
@@ -14,30 +14,35 @@ class GradientBoostingModel:
             'gb__max_depth': [3, 5, 7]
         }
         self.model = GradientBoostingRegressor()
-        self.best_params = None
-        self.train_score = None
+        self.best_params = best_params
+        self.train_score = train_score
 
     def train(self, X, y) -> float:
-        # Definisce il pipeline con lo scaler e il modello GradientBoosting
-        pipeline = Pipeline([
-            ('scaler', StandardScaler()),
-            ('gb', GradientBoostingRegressor())
-        ])
-        
-        # Definisce la GridSearch con cross-validation
-        grid_search = GridSearchCV(
-            pipeline, self.param_grid, cv=5, scoring='neg_mean_absolute_error', n_jobs=-1
-        )
-        
-        # Esegue l'allenamento
-        grid_search.fit(X, y)
-        
-        # Salva il modello migliore
-        self.model = grid_search.best_estimator_
-        self.best_params = grid_search.best_params_
-        self.train_score = grid_search.best_score_
-        print(f"Best params: {self.best_params}")
-        return grid_search.best_score_
+
+        if self.best_params:
+            self.model = GradientBoostingRegressor(**self.best_params)
+            self.model.fit(X, y)
+        else:
+            # Definisce il pipeline con lo scaler e il modello GradientBoosting
+            pipeline = Pipeline([
+                ('scaler', StandardScaler()),
+                ('gb', GradientBoostingRegressor())
+            ])
+            
+            # Definisce la GridSearch con cross-validation
+            grid_search = GridSearchCV(
+                pipeline, self.param_grid, cv=5, scoring='neg_mean_absolute_error', n_jobs=-1
+            )
+            
+            # Esegue l'allenamento
+            grid_search.fit(X, y)
+            
+            # Salva il modello migliore
+            self.model = grid_search.best_estimator_
+            self.best_params = grid_search.best_params_
+            self.train_score = grid_search.best_score_
+            print(f"Best params: {self.best_params}")
+            return grid_search.best_score_
 
     def predict(self, X) -> list:
         return self.model.predict(X)
